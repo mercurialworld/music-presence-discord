@@ -123,7 +123,7 @@ async def update_apps_periodically():
         print("Updating application IDs")
         await update_apps()
         await check_guilds()
-        await asyncio.sleep(60 * 60)
+        await asyncio.sleep(60 * 60 * 8)
 
 
 @client.event
