@@ -131,6 +131,12 @@ async def on_guild_join(guild: discord.Guild):
 
 
 @client.event
+async def on_guild_remove(guild: discord.Guild):
+    if settings.dexists("roles", str(guild.id)):
+        settings.dpop("roles", str(guild.id))
+
+
+@client.event
 async def on_presence_update(_: discord.Member, member: discord.Member):
     await check_member(member)
 
