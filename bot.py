@@ -4,6 +4,8 @@
 # Invite link:
 # https://discord.com/api/oauth2/authorize?client_id=1236022326773022800&permissions=2415919104&scope=bot%20applications.commands
 
+MUSIC_APP_ID = 1205619376275980288
+PODCAST_APP_ID = 1292142821482172506
 PLAYERS_JSON_URL = "https://live.musicpresence.app/v2/players.min.json"
 
 import os
@@ -100,6 +102,9 @@ async def setup_guild(guild: discord.Guild):
 
 async def update_apps():
     result = {}
+    # TODO clean this up
+    result[str(MUSIC_APP_ID)] = True
+    result[str(PODCAST_APP_ID)] = True
     async with aiohttp.ClientSession() as session:
         async with session.get(PLAYERS_JSON_URL) as response:
             if response.status != 200:
