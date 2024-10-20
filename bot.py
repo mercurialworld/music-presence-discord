@@ -73,7 +73,8 @@ async def check_member(member: discord.Member):
     apps = settings.get("apps")
     for activity in member.activities:
         if (
-            activity.type == discord.ActivityType.listening
+            not isinstance(activity, discord.Spotify)
+            and activity.type == discord.ActivityType.listening
             and str(activity.application_id) in apps
         ):
             return await give_role(member)
