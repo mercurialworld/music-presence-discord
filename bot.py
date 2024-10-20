@@ -92,7 +92,7 @@ async def check_guild(guild: discord.Guild):
 
 async def check_guilds():
     for guild in client.guilds:
-        await setup_guild(guild)
+        await check_guild(guild)
 
 
 async def setup_guild(guild: discord.Guild):
@@ -115,7 +115,6 @@ async def update_apps():
                 app_id = player["discord_application_id"]
                 result[str(app_id)] = True
     settings.set("apps", result)
-    await check_guilds()
     print(f"Updated application IDs ({len(result)} entries)")
 
 
@@ -123,11 +122,14 @@ async def update_apps_periodically():
     while True:
         print("Updating application IDs")
         await update_apps()
+        await check_guilds()
         await asyncio.sleep(60 * 60)
 
 
 @client.event
 async def on_ready():
+    for guild in client.guilds:
+        setup_guild(guild)
     client.loop.create_task(update_apps_periodically())
 
 
