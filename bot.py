@@ -155,7 +155,7 @@ async def set_role(interaction: discord.Interaction, role: Optional[discord.Role
         return
     if not role.is_assignable():
         return await interaction.response.send_message(
-            "Cannot assign this role to members"
+            "Cannot assign this role to members. Make sure the bot's role is above this role"
         )
     if not role.permissions.is_subset(discord.Permissions.none()):
         return await interaction.response.send_message(
