@@ -76,7 +76,7 @@ def get_listener_roles(guild: discord.Guild) -> list[discord.Role]:
 
 
 async def give_listener_role(member: discord.Member):
-    for role in member.roles:
+    for role in reversed(member.roles):
         listener_role = get_listener_role(member.guild, role)
         if listener_role is not None:
             if listener_role not in member.roles:
