@@ -1,7 +1,8 @@
 # Required permissions:
-# - Manage Roles (required to set and remove roles from users)
+# - Manage Roles (required to set and remove roles from members)
+# - Use Slash Commands (required to create and register commands in guilds)
 # Invite link:
-# https://discord.com/api/oauth2/authorize?client_id=1236022326773022800&permissions=268435456&scope=bot%20applications.commands
+# https://discord.com/api/oauth2/authorize?client_id=1236022326773022800&permissions=2415919104&scope=bot%20applications.commands
 
 PLAYERS_JSON_URL = "https://live.musicpresence.app/v2/players.min.json"
 
