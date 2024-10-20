@@ -153,7 +153,7 @@ async def on_presence_update(_: discord.Member, member: discord.Member):
 )
 async def set_role(interaction: discord.Interaction, role: Optional[discord.Role]):
     if interaction.guild_id is None:
-        await interaction.response.send_message("No guild ID for interaction")
+        return await interaction.response.send_message("No guild ID for interaction")
     if not role:
         if not settings.dexists("roles", str(interaction.guild_id)):
             await interaction.response.send_message("No listener role configured")
