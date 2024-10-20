@@ -3,7 +3,10 @@
 This is the Discord bot for the Music Presence
 [Discord server](https://discord.com/invite/7rc8dWD4ug)!
 
-- Automatically assigns Music Presence users a configured "Listener" role
+- Automatically assigns server members a configured listener role
+  when they are listening to music
+  and sharing it in their Discord status via
+  [Music Presence](https://github.com/ungive/discord-music-presence)
 - Other ideas? [Let me know!](https://github.com/music-presence/discord-bot/issues)
 
 ## Setup
