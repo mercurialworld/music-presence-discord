@@ -5,4 +5,4 @@ RUN pip install -r requirements.txt
 ADD bot.py .
 VOLUME [ "/data" ]
 WORKDIR /data
-CMD ["python", "/bot.py"] 
+CMD ["python", "-u", "/bot.py"] 
