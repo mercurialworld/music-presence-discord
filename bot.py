@@ -94,7 +94,6 @@ async def check_guilds():
 async def setup_guild(guild: discord.Guild):
     tree.copy_global_to(guild=guild)
     await tree.sync(guild=guild)
-    await check_guild(guild)
 
 
 async def update_apps():
