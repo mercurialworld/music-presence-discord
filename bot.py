@@ -129,7 +129,7 @@ async def update_apps_periodically():
 @client.event
 async def on_ready():
     for guild in client.guilds:
-        setup_guild(guild)
+        await setup_guild(guild)
     client.loop.create_task(update_apps_periodically())
 
 
