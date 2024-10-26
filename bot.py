@@ -115,6 +115,7 @@ async def check_member(member: discord.Member):
     for activity in member.activities:
         if (
             not isinstance(activity, discord.Spotify)
+            and isinstance(activity, discord.Activity)
             and str(activity.application_id) in apps
         ):
             return await give_listener_role(member)
