@@ -14,6 +14,7 @@ import asyncio
 import aiohttp
 from typing import Optional
 from collections import defaultdict
+from enum import Enum
 
 import discord
 import pickledb
@@ -113,6 +114,8 @@ async def check_member(member: discord.Member):
         return await remove_all_listener_roles_from_member(member)
     apps = settings.get("apps")
     for activity in member.activities:
+        if isinstance(activity, discord.Activity):
+            print(str(activity.application_id), activity)
         if (
             not isinstance(activity, discord.Spotify)
             and isinstance(activity, discord.Activity)
@@ -321,6 +324,40 @@ async def stop(interaction: discord.Interaction):
         await remove_all_listener_roles_from_all(guild)
     await interaction.response.send_message("Removed all roles, stopping now")
     await client.close()
+
+
+class Platform(str, Enum):
+    WIN = "Windows"
+    MAC = "Mac"
+
+
+PLATFORM_LOG_FILES = {
+    Platform.WIN: "%APPDATA%\\Music Presence\\presence.log",
+    Platform.MAC: "~/Library/Application Support/Music Presence/presence.log",
+}
+
+
+@tree.command(
+    name="logs",
+    description="Tells you where the Music Presence logs are located",
+)
+@discord.app_commands.choices(
+    os=[
+        discord.app_commands.Choice(name="Windows", value=Platform.WIN),
+        discord.app_commands.Choice(name="Mac", value=Platform.MAC),
+    ]
+)
+async def stop(
+    interaction: discord.Interaction,
+    os: discord.app_commands.Choice[str] = None,
+):
+    lines = ["You can find the log file for Music Presence here:"]
+    for platform in Platform:
+        print(os, platform, type(os), type(platform))
+        if os is None or platform == os.value:
+            filepath = PLATFORM_LOG_FILES[platform]
+            lines.append(f"- {platform.value}: `{filepath}`")
+    await interaction.response.send_message("\n".join(lines))
 
 
 # TODO properly remove roles from users when the bot is shut down
