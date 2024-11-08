@@ -210,7 +210,7 @@ def get_role_overview(guild: discord.Guild) -> str | None:
     lines = []
     for listener_role_id, for_role_ids in inverse.items():
         lines.append(
-            f"<@&{listener_role_id}> is assigned to {rreplace(', '.join([
+            f"- <@&{listener_role_id}> is assigned to {rreplace(', '.join([
                 f"<@&{role_id}>" for role_id in for_role_ids
             ]), ', ', ' and ')}"
         )
