@@ -97,7 +97,7 @@ async def remove_listener_role_from_all(
     listener_role = get_listener_role(guild, for_role)
     if listener_role is not None:
         for member in guild.members:
-            if listener_role in member.roles:
+            if for_role in member.roles and listener_role in member.roles:
                 await member.remove_roles(listener_role)
     return listener_role
 
