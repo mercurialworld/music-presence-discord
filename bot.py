@@ -114,8 +114,6 @@ async def check_member(member: discord.Member):
         return await remove_all_listener_roles_from_member(member)
     apps = settings.get("apps")
     for activity in member.activities:
-        if isinstance(activity, discord.Activity):
-            print(str(activity.application_id), activity)
         if (
             not isinstance(activity, discord.Spotify)
             and isinstance(activity, discord.Activity)
@@ -353,7 +351,6 @@ async def stop(
 ):
     lines = ["You can find the log file for Music Presence here:"]
     for platform in Platform:
-        print(os, platform, type(os), type(platform))
         if os is None or platform == os.value:
             filepath = PLATFORM_LOG_FILES[platform]
             lines.append(f"- {platform.value}: `{filepath}`")
