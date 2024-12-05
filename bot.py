@@ -6,7 +6,7 @@
 
 MUSIC_APP_ID = 1205619376275980288
 PODCAST_APP_ID = 1292142821482172506
-PLAYERS_JSON_URL = "https://live.musicpresence.app/v2/players.min.json"
+PLAYERS_JSON_URL = "https://live.musicpresence.app/v3/players.min.json"
 
 import os
 import json
@@ -151,8 +151,11 @@ async def update_apps():
                 return
             players = json.loads(await response.read())
             for player in players["players"]:
-                app_id = player["discord_application_id"]
-                result[str(app_id)] = True
+                if "extra" in player and "discord_application_id" in player["extra"]:
+                    app_id = player["extra"]["discord_application_id"]
+                    result[str(app_id)] = True
+                else:
+                    print("player", player, "does not have a discord app id")
     settings.set("apps", result)
     print(f"Updated application IDs ({len(result)} entries)")
 
