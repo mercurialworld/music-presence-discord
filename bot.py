@@ -348,7 +348,7 @@ PLATFORM_LOG_FILES = {
         discord.app_commands.Choice(name="Mac", value=Platform.MAC),
     ]
 )
-async def stop(
+async def logs(
     interaction: discord.Interaction,
     os: discord.app_commands.Choice[str] = None,
 ):
