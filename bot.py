@@ -10,15 +10,20 @@ PLAYERS_JSON_URL = "https://live.musicpresence.app/v3/players.min.json"
 
 import os
 import json
-import asyncio
-import aiohttp
+import re
+import traceback
+from datetime import timedelta
 from typing import Optional
 from collections import defaultdict
 from enum import Enum
 
 import discord
 import pickledb
+import asyncio
+import aiohttp
 from dotenv import load_dotenv
+from memoize.configuration import DefaultInMemoryCacheConfiguration
+from memoize.wrapper import memoize
 
 
 def load_settings(version: int = 0) -> pickledb.PickleDB:
@@ -366,6 +371,37 @@ async def logs(
     await logs_response(interaction, os)
 
 
+LATEST_RELEASE_URL = (
+    "https://api.github.com/repos/ungive/discord-music-presence/releases?per_page=1"
+)
+
+
+@memoize(
+    configuration=DefaultInMemoryCacheConfiguration(
+        update_after=timedelta(minutes=15), expire_after=timedelta(minutes=30)
+    )
+)
+async def latest_github_release_version() -> str:
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(LATEST_RELEASE_URL) as response:
+                if response.status != 200:
+                    raise RuntimeError(
+                        "Failed to get latest version from the GitHub API"
+                    )
+                data = json.loads(await response.read())
+                if len(data) < 0:
+                    raise RuntimeError("The GitHub API returned an empty result")
+                latest_release = data[0]
+                tag = latest_release["tag_name"]
+                if not re.search(r"^v\d+\.\d+\.\d+$", tag):
+                    raise RuntimeError(f"Bad version tag format: {tag}")
+                return tag[1:]
+    except Exception as e:
+        print(f"GitHub API request failed: {e}")
+        traceback.print_exc()
+
+
 class HelpTopic(str, Enum):
     Installation = "Installation"
     PlayerDetection = "Player detection"
@@ -393,18 +429,18 @@ HELP_MESSAGE_LINES = {
         f"You'll find more information at the provided help page",
     ],
 }
-HELP_DOWNLOAD_URLS = [
+HELP_DOWNLOAD_URLS_FORMAT = [
     (
         "Windows",
-        "https://github.com/ungive/discord-music-presence/releases/download/v2.2.7/musicpresence-2.2.7-windows-x64-installer.exe",
+        "https://github.com/ungive/discord-music-presence/releases/download/v{version}/musicpresence-{version}-windows-x64-installer.exe",
     ),
     (
         "Mac Apple Silicon",
-        "https://github.com/ungive/discord-music-presence/releases/download/v2.2.7/musicpresence-2.2.7-mac-arm64.dmg",
+        "https://github.com/ungive/discord-music-presence/releases/download/v{version}/musicpresence-{version}-mac-arm64.dmg",
     ),
     (
         "Mac Intel",
-        "https://github.com/ungive/discord-music-presence/releases/download/v2.2.7/musicpresence-2.2.7-mac-x86_64.dmg",
+        "https://github.com/ungive/discord-music-presence/releases/download/v{version}/musicpresence-{version}-mac-x86_64.dmg",
     ),
     (
         "All downloads",
@@ -412,6 +448,13 @@ HELP_DOWNLOAD_URLS = [
     ),
 ]
 HELP_TROUBLESHOOTING_URLS = [("Troubleshooting", HELP_URL_TROUBLESHOOTING)]
+
+
+async def get_download_urls() -> list[tuple[str, str]]:
+    version = await latest_github_release_version()
+    return [
+        (name, url.format(version=version)) for name, url in HELP_DOWNLOAD_URLS_FORMAT
+    ]
 
 
 def get_help_message(topic: Optional[HelpTopic]):
@@ -454,7 +497,10 @@ async def help(
     value = HelpTopic(topic.value) if topic is not None else None
     view = discord.utils.MISSING
     if value == HelpTopic.Installation:
-        view = LinkButtons(HELP_DOWNLOAD_URLS)
+        try:
+            view = LinkButtons(await get_download_urls())
+        except Exception as e:
+            return await interaction.response.send_message(f"An error occurred: {e}")
     elif value == HelpTopic.PlayerDetection:
         view = LinkButtons(HELP_TROUBLESHOOTING_URLS)
     elif value == HelpTopic.ApplicationLogs:
