@@ -8,5 +8,6 @@ idna==3.10
 multidict==6.1.0
 pickleDB==0.9.2
 propcache==0.2.0
+py-memoize==3.1.1
 python-dotenv==1.0.1
 yarl==1.15.5
