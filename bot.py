@@ -339,11 +339,11 @@ PLATFORM_LOG_FILES = {
 
 
 async def logs_response(
-    interaction: discord.Interaction, os: discord.app_commands.Choice[str] = None
+    interaction: discord.Interaction, platform: discord.app_commands.Choice[str] = None
 ):
     lines = ["You can find the log file for Music Presence here:"]
     for platform in Platform:
-        if os is None or platform == os.value:
+        if platform is None or platform == platform.value:
             filepath = PLATFORM_LOG_FILES[platform]
             lines.append(f"- {platform.value}: `{filepath}`")
     await interaction.response.send_message("\n".join(lines))
