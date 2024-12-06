@@ -338,6 +338,17 @@ PLATFORM_LOG_FILES = {
 }
 
 
+async def logs_response(
+    interaction: discord.Interaction, os: discord.app_commands.Choice[str] = None
+):
+    lines = ["You can find the log file for Music Presence here:"]
+    for platform in Platform:
+        if os is None or platform == os.value:
+            filepath = PLATFORM_LOG_FILES[platform]
+            lines.append(f"- {platform.value}: `{filepath}`")
+    await interaction.response.send_message("\n".join(lines))
+
+
 @tree.command(
     name="logs",
     description="Tells you where the Music Presence logs are located",
@@ -352,12 +363,103 @@ async def logs(
     interaction: discord.Interaction,
     os: discord.app_commands.Choice[str] = None,
 ):
-    lines = ["You can find the log file for Music Presence here:"]
-    for platform in Platform:
-        if os is None or platform == os.value:
-            filepath = PLATFORM_LOG_FILES[platform]
-            lines.append(f"- {platform.value}: `{filepath}`")
-    await interaction.response.send_message("\n".join(lines))
+    await logs_response(interaction, os)
+
+
+class HelpTopic(str, Enum):
+    Installation = "Installation"
+    PlayerDetection = "Player detection"
+    ApplicationLogs = "Application logs"
+
+
+HELP_URL_INSTALL = "https://github.com/ungive/discord-music-presence/blob/master/documentation/installation-instructions.md"
+HELP_URL_TROUBLESHOOTING = "https://github.com/ungive/discord-music-presence/blob/master/documentation/troubleshooting.md"
+HELP_MESSAGE_LINES = {
+    None: [
+        f"Choose the topic you need help with:",
+        f"- **{HelpTopic.Installation.value}**: For detailed installation instructions read the steps outlined [**here**](<{HELP_URL_INSTALL}>). "
+        f"If you can't find the download links for Music Presence, use the `/help topic:{HelpTopic.Installation.name}` command",
+        f"- **{HelpTopic.PlayerDetection.value}**: For troubleshooting undetected media players find help [**here**](<{HELP_URL_TROUBLESHOOTING}>)",
+        f"- **{HelpTopic.ApplicationLogs.value}**: For paths to log files use the `/{logs.name}` command",
+    ],
+    HelpTopic.Installation: [
+        f"- To download the app, click any of the buttons below",
+        f"- Read the installation instructions [**here**](<{HELP_URL_INSTALL}>) "
+        f"if you need help with installing Music Presence",
+    ],
+    HelpTopic.PlayerDetection: [
+        f"- For troubleshooting undetected media players find help [**here**](<{HELP_URL_TROUBLESHOOTING}>)",
+        f"- Note that your media player might need a plugin to work with Music Presence. "
+        f"You'll find more information at the provided help page",
+    ],
+}
+HELP_DOWNLOAD_URLS = [
+    (
+        "Windows",
+        "https://github.com/ungive/discord-music-presence/releases/download/v2.2.7/musicpresence-2.2.7-windows-x64-installer.exe",
+    ),
+    (
+        "Mac Apple Silicon",
+        "https://github.com/ungive/discord-music-presence/releases/download/v2.2.7/musicpresence-2.2.7-mac-arm64.dmg",
+    ),
+    (
+        "Mac Intel",
+        "https://github.com/ungive/discord-music-presence/releases/download/v2.2.7/musicpresence-2.2.7-mac-x86_64.dmg",
+    ),
+    (
+        "All downloads",
+        "https://github.com/ungive/discord-music-presence/releases/latest",
+    ),
+]
+HELP_TROUBLESHOOTING_URLS = [("Troubleshooting", HELP_URL_TROUBLESHOOTING)]
+
+
+def get_help_message(topic: Optional[HelpTopic]):
+    if topic in HELP_MESSAGE_LINES:
+        return "\n".join(HELP_MESSAGE_LINES[topic])
+    return "No help message for this topic available"
+
+
+class LinkButtons(discord.ui.View):
+    def __init__(self, labelled_urls: list[tuple[str, str]]):
+        super().__init__()
+        for name, url in labelled_urls:
+            self.add_item(discord.ui.Button(label=name, url=url))
+
+
+@tree.command(
+    name="help",
+    description="Use this command if you need help with Music Presence",
+)
+@discord.app_commands.choices(
+    topic=[
+        discord.app_commands.Choice(
+            name=HelpTopic.Installation.value,
+            value=HelpTopic.Installation.value,
+        ),
+        discord.app_commands.Choice(
+            name=HelpTopic.PlayerDetection.value,
+            value=HelpTopic.PlayerDetection.value,
+        ),
+        discord.app_commands.Choice(
+            name=HelpTopic.ApplicationLogs.value,
+            value=HelpTopic.ApplicationLogs.value,
+        ),
+    ]
+)
+async def help(
+    interaction: discord.Interaction,
+    topic: discord.app_commands.Choice[str] = None,
+):
+    value = HelpTopic(topic.value) if topic is not None else None
+    view = discord.utils.MISSING
+    if value == HelpTopic.Installation:
+        view = LinkButtons(HELP_DOWNLOAD_URLS)
+    elif value == HelpTopic.PlayerDetection:
+        view = LinkButtons(HELP_TROUBLESHOOTING_URLS)
+    elif value == HelpTopic.ApplicationLogs:
+        return await logs_response(interaction)
+    await interaction.response.send_message(get_help_message(value), view=view)
 
 
 # TODO properly remove roles from users when the bot is shut down
