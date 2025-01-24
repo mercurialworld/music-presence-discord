@@ -321,7 +321,7 @@ async def set_role(
 
 @tree.command(
     name="roles",
-    description="list all listener roles and their respective parent roles",
+    description="List all listener roles and their respective parent roles",
 )
 async def list_roles(interaction: discord.Interaction):
     if not settings.dexists("roles", str(interaction.guild.id)):
