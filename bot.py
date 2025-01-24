@@ -364,10 +364,7 @@ async def listening_role(interaction: discord.Interaction, delete: Optional[bool
         if (
             not isinstance(activity, discord.Spotify)
             and isinstance(activity, discord.Activity)
-            and (
-                activity.type == discord.ActivityType.listening
-                or activity.type == discord.ActivityType.playing
-            )
+            and activity.type == discord.ActivityType.listening
         ):
             app_id = activity.application_id
             if app_id is None:
