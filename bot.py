@@ -12,9 +12,12 @@ import os
 import json
 import re
 import traceback
+from time import time
 from datetime import timedelta
 from typing import Optional
 from collections import defaultdict
+from dataclasses import dataclass
+import dataclasses
 from enum import Enum
 
 import discord
@@ -28,7 +31,7 @@ from memoize.wrapper import memoize
 
 def load_settings(version: int = 0) -> pickledb.PickleDB:
     settings = pickledb.load(f"settings.{version}.db", True)
-    for key in ["apps", "roles"]:
+    for key in ["apps", "user_apps", "roles"]:
         if not settings.exists(key):
             settings.dcreate(key)
     return settings
@@ -118,11 +121,15 @@ async def check_member(member: discord.Member):
     if member.status in (discord.Status.invisible, discord.Status.offline):
         return await remove_all_listener_roles_from_member(member)
     apps = settings.get("apps")
+    user_apps = {}
+    if settings.dexists("user_apps", str(member.id)):
+        user_apps = settings.dget("user_apps", str(member.id))
     for activity in member.activities:
+        app_id = activity.application_id
         if (
             not isinstance(activity, discord.Spotify)
             and isinstance(activity, discord.Activity)
-            and str(activity.application_id) in apps
+            and (str(app_id) in apps or str(app_id) in user_apps)
         ):
             return await give_listener_role(member)
     await remove_all_listener_roles_from_member(member)
@@ -142,6 +149,13 @@ async def check_guilds():
 async def setup_guild(guild: discord.Guild):
     tree.copy_global_to(guild=guild)
     await tree.sync(guild=guild)
+
+
+@dataclass
+class UserApp:
+    app_id: int
+    user_id: int
+    timestamp: int
 
 
 async def update_apps():
@@ -319,6 +333,65 @@ async def list_roles(interaction: discord.Interaction):
         overview,
         allowed_mentions=discord.AllowedMentions(roles=False),
     )
+
+
+@tree.command(
+    name="listening",
+    description="Register your currently active listening status for the listener role",
+)
+async def listening_role(interaction: discord.Interaction, delete: Optional[bool]):
+    guild_member = None
+    for member in interaction.guild.members:
+        if member.id == interaction.user.id:
+            guild_member = member
+            break
+    if guild_member is None:
+        return await interaction.response.send_message(
+            "Interaction user not found amongst guild members"
+        )
+    user_id = guild_member.id
+    if delete:
+        settings.dpop("user_apps", str(user_id))
+        await check_member(guild_member)
+        await interaction.response.send_message(
+            f"Removed any registered app IDs for <@{user_id}>"
+        )
+        return
+    count = 0
+    for activity in guild_member.activities:
+        if (
+            not isinstance(activity, discord.Spotify)
+            and isinstance(activity, discord.Activity)
+            and (
+                activity.type == discord.ActivityType.listening
+                or activity.type == discord.ActivityType.playing
+            )
+        ):
+            app_id = activity.application_id
+            if app_id is None:
+                continue
+            if not settings.dexists("user_apps", str(user_id)):
+                settings.dadd("user_apps", (str(user_id), {}))
+            user_apps = settings.dget("user_apps", str(user_id))
+            # Only one custom app ID is allowed per user.
+            user_apps.clear()
+            user_apps[str(app_id)] = dataclasses.asdict(
+                UserApp(
+                    app_id=app_id,
+                    user_id=guild_member.id,
+                    timestamp=int(time()),
+                )
+            )
+            settings.dadd("user_apps", (str(user_id), user_apps))
+            await interaction.response.send_message(
+                f"Registered listening role for app ID `{app_id}` for <@{user_id}>"
+            )
+            count += 1
+    if count == 0:
+        return await interaction.response.send_message(
+            f"No app ID found, make sure your presence is visible"
+        )
+    await check_member(guild_member)
 
 
 @tree.command(
