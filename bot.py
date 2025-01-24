@@ -125,11 +125,13 @@ async def check_member(member: discord.Member):
     if settings.dexists("user_apps", str(member.id)):
         user_apps = settings.dget("user_apps", str(member.id))
     for activity in member.activities:
-        app_id = activity.application_id
         if (
             not isinstance(activity, discord.Spotify)
             and isinstance(activity, discord.Activity)
-            and (str(app_id) in apps or str(app_id) in user_apps)
+            and (
+                str(activity.application_id) in apps
+                or str(activity.application_id) in user_apps
+            )
         ):
             return await give_listener_role(member)
     await remove_all_listener_roles_from_member(member)
