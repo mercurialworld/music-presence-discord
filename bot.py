@@ -369,6 +369,11 @@ async def listening_role(interaction: discord.Interaction, delete: Optional[bool
             app_id = activity.application_id
             if app_id is None:
                 continue
+            if settings.dexists("apps", str(app_id)):
+                await interaction.response.send_message(
+                    f"App ID `{app_id}` is already known"
+                )
+                return
             if not settings.dexists("user_apps", str(user_id)):
                 settings.dadd("user_apps", (str(user_id), {}))
             user_apps = settings.dget("user_apps", str(user_id))
