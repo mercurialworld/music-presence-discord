@@ -7,6 +7,8 @@
 MUSIC_APP_ID = 1205619376275980288
 PODCAST_APP_ID = 1292142821482172506
 PLAYERS_JSON_URL = "https://live.musicpresence.app/v3/players.min.json"
+MAX_USER_APP_ID_RETENTION = 60 * 60 * 24 * 30  # 30 days (in seconds)
+MIN_RETENTION_UPDATE_INTERVAL = 60 * 60 * 24  # 24 hours (in seconds)
 
 import os
 import json
@@ -117,6 +119,13 @@ async def remove_all_listener_roles_from_all(guild: discord.Guild):
                 await member.remove_roles(listener_role)
 
 
+@dataclass
+class UserApp:
+    app_id: int
+    user_id: int
+    timestamp: int
+
+
 async def check_member(member: discord.Member):
     if member.status in (discord.Status.invisible, discord.Status.offline):
         return await remove_all_listener_roles_from_member(member)
@@ -133,6 +142,17 @@ async def check_member(member: discord.Member):
                 or str(activity.application_id) in user_apps
             )
         ):
+            app_id_key = str(activity.application_id)
+            if app_id_key in user_apps:
+                # Update the timestamp to the current time
+                # since this user app ID was used now.
+                info = UserApp(**user_apps[app_id_key])
+                now = int(time())
+                if info.timestamp + MIN_RETENTION_UPDATE_INTERVAL < now:
+                    # Make sure it's not updated too frequently though
+                    info.timestamp = now
+                    user_apps[app_id_key] = dataclasses.asdict(info)
+                    settings.dadd("user_apps", (str(member.id), user_apps))
             return await give_listener_role(member)
     await remove_all_listener_roles_from_member(member)
 
@@ -153,11 +173,27 @@ async def setup_guild(guild: discord.Guild):
     await tree.sync(guild=guild)
 
 
-@dataclass
-class UserApp:
-    app_id: int
-    user_id: int
-    timestamp: int
+async def purge_user_app_ids():
+    apps = settings.get("apps")
+    user_apps = settings.get("user_apps")
+    sanitized = {}
+    for user_id, value in user_apps.items():
+        result = {}
+        for app_id, info in value.items():
+            # Remove app ids that are already known
+            if str(app_id) in apps:
+                print(f"Deleted known user app ID {app_id} for user {user_id}")
+                continue
+            # Remove app ids that are past their max age
+            parsed_info = UserApp(**info)
+            print("parsed_info", parsed_info)
+            if parsed_info.timestamp + MAX_USER_APP_ID_RETENTION < int(time()):
+                print(f"Deleted expired user app ID {app_id} for user {user_id}")
+                continue
+            result[str(app_id)] = info
+        if len(result) > 0:
+            sanitized[user_id] = result
+    settings.set("user_apps", sanitized)
 
 
 async def update_apps():
@@ -179,6 +215,7 @@ async def update_apps():
                     print("player", player, "does not have a discord app id")
     settings.set("apps", result)
     print(f"Updated application IDs ({len(result)} entries)")
+    await purge_user_app_ids()
 
 
 async def update_apps_periodically():
