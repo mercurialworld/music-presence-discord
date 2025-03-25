@@ -170,7 +170,8 @@ async def check_guilds():
 
 async def setup_guild(guild: discord.Guild):
     tree.copy_global_to(guild=guild)
-    await tree.sync(guild=guild)
+    commands = await tree.sync(guild=guild)
+    print(f"Synced {len(commands)} commands: {', '.join([ c.name for c in commands ])}")
 
 
 async def purge_user_app_ids():
