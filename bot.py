@@ -38,8 +38,11 @@ def load_settings(version: int = 0) -> pickledb.PickleDB:
             settings.dcreate(key)
     return settings
 
+
 discord.utils.setup_logging()
-discord.VoiceClient.warn_nacl = False # doesn't need voice perms, it's a role assign bot
+discord.VoiceClient.warn_nacl = (
+    False  # doesn't need voice perms, it's a role assign bot
+)
 settings = load_settings()
 load_dotenv()
 
@@ -454,7 +457,10 @@ async def joined_stats(interaction: discord.Interaction, member: discord.Member 
 
     await interaction.response.send_message(embed=embed)
 
+
 original_error_handler = tree.on_error
+
+
 # Annoyingly required catch for when member cannot be found by Discord else we get interaction timeout & ugly error
 @tree.error
 async def on_app_command_error(
@@ -551,7 +557,7 @@ class Platform(str, Enum):
 PLATFORM_LOG_FILES = {
     Platform.WIN: "%APPDATA%\\Music Presence\\presence.log",
     Platform.MAC: "~/Library/Application Support/Music Presence/presence.log",
-    Platform.LIN: "~/.local/share/Music Presence/presence.log"
+    Platform.LIN: "~/.local/share/Music Presence/presence.log",
 }
 
 
@@ -567,7 +573,7 @@ async def logs_response(
     else:
         lines[0] += f" on {platform.value} here:"
         lines.append(f"`{PLATFORM_LOG_FILES[platform]}`")
-    
+
     await interaction.response.send_message("\n".join(lines))
 
 
@@ -579,7 +585,7 @@ async def logs_response(
     os=[
         discord.app_commands.Choice(name="Windows", value=Platform.WIN),
         discord.app_commands.Choice(name="Mac", value=Platform.MAC),
-        discord.app_commands.Choice(name="Linux", value=Platform.LIN)
+        discord.app_commands.Choice(name="Linux", value=Platform.LIN),
     ]
 )
 async def logs(
