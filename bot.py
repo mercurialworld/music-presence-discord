@@ -374,75 +374,94 @@ async def list_roles(interaction: discord.Interaction):
         allowed_mentions=discord.AllowedMentions(roles=False),
     )
 
+
 @tree.command(
     name="joined",
-    description="Check the join time of yourself or another user with some extras"
+    description="Check the join time of yourself or another user with some extras",
 )
 @discord.app_commands.describe(
     member="The member to check (leave empty to check yourself)"
 )
-async def member_number(interaction: discord.Interaction, member: discord.Member = None):
+async def member_number(
+    interaction: discord.Interaction, member: discord.Member = None
+):
     target_member = member or interaction.user
     guild = interaction.guild
 
-    members_by_join_date = sorted(guild.members, key=lambda m: m.joined_at or discord.utils.utcnow())
+    members_by_join_date = sorted(
+        guild.members, key=lambda m: m.joined_at or discord.utils.utcnow()
+    )
 
     try:
         member_index = members_by_join_date.index(target_member)
     except ValueError:
         await interaction.response.send_message(
             f"❌ Could not find {'yourself' if member is None else target_member.display_name} in the member list.",
-            ephemeral=True
+            ephemeral=True,
         )
         return
 
     member_number = member_index + 1
     total_members = len(members_by_join_date)
-    join_date = target_member.joined_at.strftime("%B %d, %Y") if target_member.joined_at else "Unknown"
+    join_date = (
+        target_member.joined_at.strftime("%B %d, %Y")
+        if target_member.joined_at
+        else "Unknown"
+    )
 
     embed = discord.Embed(
-        title="Member Timeline Position",
-        color=0xE6DFD0 #Presence Beige:tm:
+        title="Member Timeline Position", color=0xE6DFD0  # Presence Beige:tm:
     )
 
     if member:
-        embed.description = f"**{target_member.display_name}** joined this server on **{join_date}**"
+        embed.description = (
+            f"**{target_member.display_name}** joined this server on **{join_date}**"
+        )
         embed.add_field(
             name="Member Number",
             value=f"#{member_number} out of {total_members}",
-            inline=False
+            inline=False,
         )
     else:
         embed.description = f"You joined this server on **{join_date}**"
         embed.add_field(
             name="Your Member Number",
             value=f"#{member_number} out of {total_members}",
-            inline=False
+            inline=False,
         )
 
     if target_member.avatar:
         embed.set_thumbnail(url=target_member.avatar.url)
 
-    percentage = round(((total_members - member_number) / (total_members - 1)) * 100, 1) if total_members > 1 else 0
+    percentage = (
+        round(((total_members - member_number) / (total_members - 1)) * 100, 1)
+        if total_members > 1
+        else 0
+    )
     embed.add_field(
         name="Early Bird Percentage",
         value=f"You joined earlier than {percentage}% of members",
-        inline=True
+        inline=True,
     )
 
-    embed.set_footer(text=f"{guild.name} • Server created on {guild.created_at.strftime('%B %d, %Y')}")
+    embed.set_footer(
+        text=f"{guild.name} • Server created on {guild.created_at.strftime('%B %d, %Y')}"
+    )
 
     await interaction.response.send_message(embed=embed)
 
+
 # Annoyingly required catch for when member cannot be found by Discord else we get interaction timeout & ugly error
 @tree.error
-async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
+async def on_app_command_error(
+    interaction: discord.Interaction, error: discord.app_commands.AppCommandError
+):
     if interaction.command and interaction.command.name == "membernum":
         if isinstance(error, discord.app_commands.errors.TransformerError):
             await interaction.response.send_message(
-                "❌ Could not find that member in the server.",
-                ephemeral=True
+                "❌ Could not find that member in the server.", ephemeral=True
             )
+
 
 @tree.command(
     name="listening",
