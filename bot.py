@@ -592,7 +592,7 @@ async def logs(
     interaction: discord.Interaction,
     os: discord.app_commands.Choice[str] = None,
 ):
-    await logs_response(interaction, os.value)
+    await logs_response(interaction, os.value if os is not None else None)
 
 
 LATEST_RELEASE_URL = (
