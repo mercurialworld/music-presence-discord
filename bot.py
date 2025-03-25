@@ -376,16 +376,18 @@ async def list_roles(interaction: discord.Interaction):
     )
 
 
+# FIXME make this en enumeration
+joined_command_name = "joined"
+
+
 @tree.command(
-    name="joined",
+    name=joined_command_name,
     description="Check the join time of yourself or another user with some extras",
 )
 @discord.app_commands.describe(
     member="The member to check (leave empty to check yourself)"
 )
-async def member_number(
-    interaction: discord.Interaction, member: discord.Member = None
-):
+async def joined_stats(interaction: discord.Interaction, member: discord.Member = None):
     target_member = member or interaction.user
     guild = interaction.guild
 
@@ -458,7 +460,7 @@ original_error_handler = tree.on_error
 async def on_app_command_error(
     interaction: discord.Interaction, error: discord.app_commands.AppCommandError
 ):
-    if interaction.command and interaction.command.name == "membernum":
+    if interaction.command and interaction.command.name == joined_command_name:
         if isinstance(error, discord.app_commands.errors.TransformerError):
             await interaction.response.send_message(
                 "❌ Could not find that member in the server.", ephemeral=True
