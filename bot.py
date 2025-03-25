@@ -567,9 +567,9 @@ async def logs_response(
     lines = ["You can find the log file for Music Presence"]
     if platform is None:
         lines[0] += " here:"
-        for platform in Platform:
-            filepath = PLATFORM_LOG_FILES[platform]
-            lines.append(f"- {platform.value}: `{filepath}`")
+        for p in Platform:
+            filepath = PLATFORM_LOG_FILES[p]
+            lines.append(f"- {p.value}: `{filepath}`")
     else:
         lines[0] += f" on {platform.value} here:"
         lines.append(f"`{PLATFORM_LOG_FILES[platform]}`")
