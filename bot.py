@@ -431,8 +431,8 @@ async def member_number(
             inline=False,
         )
 
-    if target_member.avatar:
-        embed.set_thumbnail(url=target_member.avatar.url)
+    if target_member.display_avatar:
+        embed.set_thumbnail(url=target_member.display_avatar.url)
 
     percentage = (
         round(((total_members - member_number) / (total_members - 1)) * 100, 1)
