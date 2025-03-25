@@ -389,7 +389,8 @@ async def member_number(
     guild = interaction.guild
 
     members_by_join_date = sorted(
-        guild.members, key=lambda m: m.joined_at or discord.utils.utcnow()
+        [member for member in guild.members if not member.bot],
+        key=lambda m: m.joined_at or discord.utils.utcnow(),
     )
 
     try:
