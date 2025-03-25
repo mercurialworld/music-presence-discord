@@ -38,7 +38,8 @@ def load_settings(version: int = 0) -> pickledb.PickleDB:
             settings.dcreate(key)
     return settings
 
-
+discord.utils.setup_logging()
+discord.VoiceClient.warn_nacl = False # doesn't need voice perms, it's a role assign bot
 settings = load_settings()
 load_dotenv()
 
@@ -451,7 +452,7 @@ async def member_number(
 
     await interaction.response.send_message(embed=embed)
 
-
+original_error_handler = tree.on_error
 # Annoyingly required catch for when member cannot be found by Discord else we get interaction timeout & ugly error
 @tree.error
 async def on_app_command_error(
@@ -462,6 +463,9 @@ async def on_app_command_error(
             await interaction.response.send_message(
                 "❌ Could not find that member in the server.", ephemeral=True
             )
+            return
+    # Go back to the original error handler to log all uncaught errors
+    await original_error_handler(interaction, error)
 
 
 @tree.command(
@@ -539,22 +543,29 @@ async def stop(interaction: discord.Interaction):
 class Platform(str, Enum):
     WIN = "Windows"
     MAC = "Mac"
+    LIN = "Linux"
 
 
 PLATFORM_LOG_FILES = {
     Platform.WIN: "%APPDATA%\\Music Presence\\presence.log",
     Platform.MAC: "~/Library/Application Support/Music Presence/presence.log",
+    Platform.LIN: "~/.local/share/Music Presence/presence.log"
 }
 
 
 async def logs_response(
-    interaction: discord.Interaction, platform: discord.app_commands.Choice[str] = None
+    interaction: discord.Interaction, platform: Platform | None = None
 ):
-    lines = ["You can find the log file for Music Presence here:"]
-    for platform in Platform:
-        if platform is None or platform == platform.value:
+    lines = ["You can find the log file for Music Presence"]
+    if platform is None:
+        lines[0] += " here:"
+        for platform in Platform:
             filepath = PLATFORM_LOG_FILES[platform]
             lines.append(f"- {platform.value}: `{filepath}`")
+    else:
+        lines[0] += f" on {platform.value} here:"
+        lines.append(f"`{PLATFORM_LOG_FILES[platform]}`")
+    
     await interaction.response.send_message("\n".join(lines))
 
 
@@ -566,13 +577,14 @@ async def logs_response(
     os=[
         discord.app_commands.Choice(name="Windows", value=Platform.WIN),
         discord.app_commands.Choice(name="Mac", value=Platform.MAC),
+        discord.app_commands.Choice(name="Linux", value=Platform.LIN)
     ]
 )
 async def logs(
     interaction: discord.Interaction,
     os: discord.app_commands.Choice[str] = None,
 ):
-    await logs_response(interaction, os)
+    await logs_response(interaction, os.value)
 
 
 LATEST_RELEASE_URL = (
