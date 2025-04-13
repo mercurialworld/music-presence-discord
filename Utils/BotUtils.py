@@ -218,6 +218,37 @@ class BotUtils:
 
         return "\n".join(lines)
 
+    def tester_coverage_compute(self, beta_tester_role: Role, os_roles: list[Role]) -> dict[int, list[Member]]:
+        coverage: dict[int, list[Member]] = {}
+        for os_role in os_roles:
+            coverage[os_role.id] = []
+
+        for beta_tester in beta_tester_role.members:
+            for os_role in os_roles:
+                if os_role in beta_tester.roles:
+                    coverage[os_role.id].append(beta_tester)
+
+        return coverage
+
+    def tester_coverage_make_embed(self, beta_tester_role: Role, os_roles: list[Role], coverage: dict[int, list[Member]]) -> discord.Embed:
+        embed = discord.Embed(title='Music Presence users tests coverage')
+        embed.add_field(
+            name=f"{len(beta_tester_role.members)} beta tester{'s' if len(beta_tester_role.members) > 1 else ''}",
+            value=f"> {', '.join([f"<@{m.id}>" for m in beta_tester_role.members])}\n\n",
+        )
+        for os_role in os_roles:
+            value = "> "
+            os_coverage_members = coverage.get(os_role.id)
+            if len(os_coverage_members) == 0:
+                value += ":warning:"
+            else:
+                value += f":white_check_mark: (covered by {len(os_coverage_members)} member{'s' if len(os_coverage_members) > 1 else ''})\n"
+                value += f"> {', '.join([f"<@{m.id}>" for m in os_coverage_members])}"
+
+            embed.add_field(name=f"{os_role.name}", value=value, inline=False)
+
+        return embed
+
     async def logs_response(self, interaction: Interaction, platform: PlatformEnum | None = None):
         lines = ["You can find the log file for Music Presence"]
         if platform is None:

@@ -8,7 +8,7 @@ from typing import Optional
 from discord import Guild, Role, Member, AllowedMentions, Interaction, app_commands
 from discord.app_commands import Choice
 
-from Enum.Constants import HELP_TROUBLESHOOTING_URLS
+from Enum.Constants import HELP_TROUBLESHOOTING_URLS, ROLE_BETA_TESTER, ROLES_OS
 from Enum.HelpTopicEnum import HelpTopicEnum
 from Enum.CommandEnum import CommandEnum
 from Enum.PlatformEnum import PlatformEnum
@@ -350,5 +350,27 @@ async def command_help(interaction: Interaction, topic: Choice[str] = None):
         return await bot_utils.logs_response(interaction)
 
     await interaction.response.send_message(bot_utils.get_help_message(value), view=view)
+
+@tree.command(name=CommandEnum.TESTER_COVERAGE, description=CommandEnum.TESTER_COVERAGE.description())
+async def command_tester_coverage(interaction: Interaction):
+    guild = interaction.guild
+    beta_tester_role = guild.get_role(ROLE_BETA_TESTER)
+    if beta_tester_role is None:
+        return await interaction.response.send_message('Beta tester role not found. :thinking:')
+    elif len(beta_tester_role.members) == 0:
+        return await interaction.response.send_message('No beta testers found yet ! :confused:')
+
+    os_roles = []
+    for role_id in ROLES_OS:
+        role = guild.get_role(role_id)
+        if role is not None:
+            os_roles.append(role)
+    if len(os_roles) == 0:
+        return await interaction.response.send_message('No OS roles found. :thinking:')
+
+    coverage = bot_utils.tester_coverage_compute(beta_tester_role, os_roles)
+    embed = bot_utils.tester_coverage_make_embed(beta_tester_role, os_roles, coverage)
+
+    await interaction.response.send_message(embed=embed)
 
 client.run(os.getenv("BOT_TOKEN"))
