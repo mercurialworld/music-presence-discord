@@ -1,6 +1,6 @@
 from enum import StrEnum
 
-class PlatformEnum(StrEnum):
+class Platform(StrEnum):
     WIN = "Windows"
     MAC = "Mac"
     LIN = "Linux"

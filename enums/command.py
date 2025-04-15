@@ -1,6 +1,6 @@
 from enum import StrEnum
 
-class CommandEnum(StrEnum):
+class Command(StrEnum):
     ROLE = "role"
     ROLES = "roles"
     JOINED = "joined"

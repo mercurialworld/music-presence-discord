@@ -3,19 +3,17 @@ import dotenv
 import dataclasses
 import discord
 
+import enums
+import objects
+import utils
+
 from time import time
 from typing import Optional
-from discord import Guild, Role, Member, AllowedMentions, Interaction, app_commands
+from discord import Guild, Role, Member, AllowedMentions, Interaction, app_commands as discord_command
 from discord.app_commands import Choice
 
-from Enum.Constants import HELP_TROUBLESHOOTING_URLS, ROLE_BETA_TESTER, ROLES_OS
-from Enum.HelpTopicEnum import HelpTopicEnum
-from Enum.CommandEnum import CommandEnum
-from Enum.PlatformEnum import PlatformEnum
-from Class.UserApp import UserApp
-from Class.LinkButtons import LinkButtons
-from Utils.BotUtils import BotUtils
-from Utils.InitDatabase import load_database
+from enums.constants import HELP_TROUBLESHOOTING_URLS, ROLE_BETA_TESTER, ROLES_OS
+from utils.init_database import load_database
 
 # Required permissions:
 # - Manage Roles (required to set and remove roles from members)
@@ -40,9 +38,9 @@ discord.utils.setup_logging()
 discord.VoiceClient.warn_nacl = False  # doesn't need voice perms, it's a role assign bot
 client = discord.Client(intents=intents)
 
-tree = app_commands.CommandTree(client)
+tree = discord_command.CommandTree(client)
 
-bot_utils = BotUtils(client, database, tree)
+bot_utils = utils.BotUtils(client, database, tree)
 
 
 
@@ -69,11 +67,11 @@ async def on_presence_update(_: Member, member: Member):
 
 # Annoyingly required catch when member cannot be found by Discord else we get interaction timeout & ugly error
 @tree.error
-async def on_app_command_error(interaction: Interaction, error: app_commands.AppCommandError):
+async def on_app_command_error(interaction: Interaction, error: discord_command.AppCommandError):
     global tree
 
-    if interaction.command and interaction.command.name == CommandEnum.JOINED:
-        if isinstance(error, app_commands.errors.TransformerError):
+    if interaction.command and interaction.command.name == enums.Command.JOINED:
+        if isinstance(error, discord_command.errors.TransformerError):
             await interaction.response.send_message(
                 "❌ Could not find that member in the server.", ephemeral=True
             )
@@ -90,7 +88,7 @@ async def on_app_command_error(interaction: Interaction, error: app_commands.App
 
 
 # ------------------------------------- COMMANDS
-@tree.command(name=CommandEnum.ROLE, description=CommandEnum.ROLE.description())
+@tree.command(name=enums.Command.ROLE, description=enums.Command.ROLE.description())
 async def command_set_role(
     interaction: Interaction, for_role: Optional[Role], listener_role: Optional[Role], summary: Optional[bool],
 ):
@@ -176,7 +174,7 @@ async def command_set_role(
         allowed_mentions=AllowedMentions(roles=False),
     )
 
-@tree.command(name=CommandEnum.ROLES, description=CommandEnum.ROLES.description())
+@tree.command(name=enums.Command.ROLES, description=enums.Command.ROLES.description())
 async def command_list_roles(interaction: Interaction):
     if not database.dexists("roles", str(interaction.guild.id)):
         return await interaction.response.send_message(
@@ -189,8 +187,8 @@ async def command_list_roles(interaction: Interaction):
         allowed_mentions=AllowedMentions(roles=False),
     )
 
-@tree.command(name=CommandEnum.JOINED, description=CommandEnum.JOINED.description())
-@app_commands.describe(member="The member to check (leave empty to check yourself)")
+@tree.command(name=enums.Command.JOINED, description=enums.Command.JOINED.description())
+@discord_command.describe(member="The member to check (leave empty to check yourself)")
 async def command_joined_stats(interaction: Interaction, member: Member = None):
     target_member = member or interaction.user
     guild = interaction.guild
@@ -252,7 +250,7 @@ async def command_joined_stats(interaction: Interaction, member: Member = None):
 
     await interaction.response.send_message(embed=embed)
 
-@tree.command(name=CommandEnum.LISTENING, description=CommandEnum.LISTENING.description())
+@tree.command(name=enums.Command.LISTENING, description=enums.Command.LISTENING.description())
 async def command_listening_role(interaction: Interaction, delete: Optional[bool]):
     guild_member = None
     for member in interaction.guild.members:
@@ -297,7 +295,7 @@ async def command_listening_role(interaction: Interaction, delete: Optional[bool
             user_apps = database.dget("user_apps", str(user_id))
             # Only one custom app ID is allowed per user.
             user_apps.clear()
-            user_apps[str(app_id)] = dataclasses.asdict(UserApp(app_id, guild_member.id, int(time())))
+            user_apps[str(app_id)] = dataclasses.asdict(objects.UserApp(app_id, guild_member.id, int(time())))
             database.dadd("user_apps", (str(user_id), user_apps))
             await interaction.response.send_message(
                 f"Registered listening role for app ID `{app_id}` for <@{user_id}>"
@@ -311,7 +309,7 @@ async def command_listening_role(interaction: Interaction, delete: Optional[bool
 
     await bot_utils.check_member(guild_member)
 
-@tree.command(name=CommandEnum.STOP, description=CommandEnum.STOP.description())
+@tree.command(name=enums.Command.STOP, description=enums.Command.STOP.description())
 async def command_stop(interaction: Interaction):
     for guild in client.guilds:
         await bot_utils.remove_all_listener_roles_from_all(guild)
@@ -319,39 +317,39 @@ async def command_stop(interaction: Interaction):
     await interaction.response.send_message("Removed all roles, stopping now")
     await client.close()
 
-@tree.command(name=CommandEnum.LOGS, description=CommandEnum.LOGS.description())
-@app_commands.choices(os=[
-    Choice(name="Windows", value=PlatformEnum.WIN),
-    Choice(name="Mac", value=PlatformEnum.MAC),
-    Choice(name="Linux", value=PlatformEnum.LIN),
+@tree.command(name=enums.Command.LOGS, description=enums.Command.LOGS.description())
+@discord_command.choices(os=[
+    Choice(name="Windows", value=enums.Platform.WIN),
+    Choice(name="Mac", value=enums.Platform.MAC),
+    Choice(name="Linux", value=enums.Platform.LIN),
 ])
 async def command_logs(interaction: Interaction, os: Choice[str] = None):
     await bot_utils.logs_response(interaction, os.value if os is not None else None)
 
-@tree.command(name=CommandEnum.HELP, description=CommandEnum.HELP.description())
-@app_commands.choices(topic=[
-    Choice(name=HelpTopicEnum.INSTALL, value=HelpTopicEnum.INSTALL),
-    Choice(name=HelpTopicEnum.PLAYER_DETECTION, value=HelpTopicEnum.PLAYER_DETECTION),
-    Choice(name=HelpTopicEnum.APP_LOGS, value=HelpTopicEnum.APP_LOGS),
+@tree.command(name=enums.Command.HELP, description=enums.Command.HELP.description())
+@discord_command.choices(topic=[
+    Choice(name=enums.HelpTopic.INSTALL, value=enums.HelpTopic.INSTALL),
+    Choice(name=enums.HelpTopic.PLAYER_DETECTION, value=enums.HelpTopic.PLAYER_DETECTION),
+    Choice(name=enums.HelpTopic.APP_LOGS, value=enums.HelpTopic.APP_LOGS),
 ])
 async def command_help(interaction: Interaction, topic: Choice[str] = None):
-    value = HelpTopicEnum(topic.value) if topic is not None else None
+    value = enums.HelpTopic(topic.value) if topic is not None else None
     view = discord.utils.MISSING
-    if value == HelpTopicEnum.INSTALL:
+    if value == enums.HelpTopic.INSTALL:
         try:
-            view = LinkButtons(await bot_utils.get_download_urls())
+            view = objects.LinkButtons(await bot_utils.get_download_urls())
         except Exception as e:
             return await interaction.response.send_message(f"An error occurred: {e}")
 
-    elif value == HelpTopicEnum.PLAYER_DETECTION:
-        view = LinkButtons(HELP_TROUBLESHOOTING_URLS)
+    elif value == enums.HelpTopic.PLAYER_DETECTION:
+        view = objects.LinkButtons(HELP_TROUBLESHOOTING_URLS)
 
-    elif value == HelpTopicEnum.APP_LOGS:
+    elif value == enums.HelpTopic.APP_LOGS:
         return await bot_utils.logs_response(interaction)
 
     await interaction.response.send_message(bot_utils.get_help_message(value), view=view)
 
-@tree.command(name=CommandEnum.TESTER_COVERAGE, description=CommandEnum.TESTER_COVERAGE.description())
+@tree.command(name=enums.Command.TESTER_COVERAGE, description=enums.Command.TESTER_COVERAGE.description())
 async def command_tester_coverage(interaction: Interaction):
     guild = interaction.guild
     beta_tester_role = guild.get_role(ROLE_BETA_TESTER)

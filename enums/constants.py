@@ -1,5 +1,4 @@
-from Enum.CommandEnum import CommandEnum
-from Enum.HelpTopicEnum import HelpTopicEnum
+import enums
 
 MUSIC_APP_ID = 1205619376275980288
 PODCAST_APP_ID = 1292142821482172506
@@ -15,17 +14,17 @@ HELP_URL_TROUBLESHOOTING = "https://github.com/ungive/discord-music-presence/blo
 HELP_MESSAGE_LINES = {
     None: [
         f"Choose the topic you need help with:",
-        f"- **{HelpTopicEnum.INSTALL.value}**: For detailed installation instructions read the steps outlined [**here**](<{HELP_URL_INSTALL}>). "
-        f"If you can't find the download links for Music Presence, use the `/help topic:{HelpTopicEnum.INSTALL.name}` command",
-        f"- **{HelpTopicEnum.PLAYER_DETECTION.value}**: For troubleshooting undetected media players find help [**here**](<{HELP_URL_TROUBLESHOOTING}>)",
-        f"- **{HelpTopicEnum.APP_LOGS.value}**: For paths to log files use the `/{CommandEnum.LOGS}` command",
+        f"- **{enums.HelpTopic.INSTALL.value}**: For detailed installation instructions read the steps outlined [**here**](<{HELP_URL_INSTALL}>). "
+        f"If you can't find the download links for Music Presence, use the `/help topic:{enums.HelpTopic.INSTALL.name}` command",
+        f"- **{enums.HelpTopic.PLAYER_DETECTION.value}**: For troubleshooting undetected media players find help [**here**](<{HELP_URL_TROUBLESHOOTING}>)",
+        f"- **{enums.HelpTopic.APP_LOGS.value}**: For paths to log files use the `/{enums.Command.LOGS}` command",
     ],
-    HelpTopicEnum.INSTALL: [
+    enums.HelpTopic.INSTALL: [
         f"- To download the app, click any of the buttons below",
         f"- Read the installation instructions [**here**](<{HELP_URL_INSTALL}>) "
         f"if you need help with installing Music Presence",
     ],
-    HelpTopicEnum.PLAYER_DETECTION: [
+    enums.HelpTopic.PLAYER_DETECTION: [
         f"- For troubleshooting undetected media players find help [**here**](<{HELP_URL_TROUBLESHOOTING}>)",
         f"- Note that your media player might need a plugin to work with Music Presence. "
         f"You'll find more information at the provided help page",

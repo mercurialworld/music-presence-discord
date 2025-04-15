@@ -4,9 +4,9 @@ WORKDIR /
 ADD requirements.txt .
 RUN pip install -r requirements.txt
 ADD bot.py .
-ADD Class ./Class
-ADD Enum ./Enum
-ADD Utils ./Utils
+ADD objects ./objects
+ADD enums ./enums
+ADD utils ./utils
 
 VOLUME [ "/data" ]
 WORKDIR /data

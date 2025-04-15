@@ -1,20 +1,21 @@
 import asyncio
 import json
-from collections import defaultdict
-from typing import Optional
-
 import aiohttp
 import pickledb
 import discord
 import dataclasses
 
+import enums
+import objects
+
+from collections import defaultdict
+from typing import Optional
 from discord import Guild, Role, Client, Member, Interaction
 from time import time
 
-from Class.UserApp import UserApp
-from Enum.PlatformEnum import PlatformEnum
-from Enum.Constants import *
-from Utils.Memoize import latest_github_release_version
+from enums.constants import MIN_RETENTION_UPDATE_INTERVAL, MAX_USER_APP_ID_RETENTION, MUSIC_APP_ID, PODCAST_APP_ID, \
+    PLAYERS_JSON_URL, HELP_DOWNLOAD_URLS_FORMAT, HELP_MESSAGE_LINES
+from utils.cached_result import latest_github_release_version
 
 
 def rreplace(s: str, old: str, new: str, occurrence: int = 1):
@@ -116,7 +117,7 @@ class BotUtils:
                 if app_id_key in user_apps:
                     # Update the timestamp to the current time
                     # since this user app ID was used now.
-                    info = UserApp(**user_apps[app_id_key])
+                    info = objects.UserApp(**user_apps[app_id_key])
                     now = int(time())
                     if info.timestamp + MIN_RETENTION_UPDATE_INTERVAL < now:
                         # Make sure it's not updated too frequently though
@@ -154,7 +155,7 @@ class BotUtils:
                     continue
 
                 # Remove app ids that are past their max age
-                parsed_info = UserApp(**info)
+                parsed_info = objects.UserApp(**info)
                 print("parsed_info", parsed_info)
                 if parsed_info.timestamp + MAX_USER_APP_ID_RETENTION < int(time()):
                     print(f"Deleted expired user app ID {app_id} for user {user_id}")
@@ -249,11 +250,11 @@ class BotUtils:
 
         return embed
 
-    async def logs_response(self, interaction: Interaction, platform: PlatformEnum | None = None):
+    async def logs_response(self, interaction: Interaction, platform: enums.Platform | None = None):
         lines = ["You can find the log file for Music Presence"]
         if platform is None:
             lines[0] += " here:"
-            for plt in PlatformEnum:
+            for plt in enums.Platform:
                 filepath = plt.log_files_path()
                 lines.append(f"- {plt.value}: `{filepath}`")
         else:
@@ -268,7 +269,7 @@ class BotUtils:
             (name, url.format(version=version)) for name, url in HELP_DOWNLOAD_URLS_FORMAT
         ]
 
-    def get_help_message(self, topic: Optional[HelpTopicEnum]):
+    def get_help_message(self, topic: Optional[enums.HelpTopic]):
         if topic in HELP_MESSAGE_LINES:
             return "\n".join(HELP_MESSAGE_LINES[topic])
         return "No help message for this topic available"
