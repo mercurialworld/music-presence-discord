@@ -11,9 +11,12 @@ LATEST_RELEASE_URL = (
     "https://api.github.com/repos/ungive/discord-music-presence/releases?per_page=1"
 )
 
-@memoize(configuration=DefaultInMemoryCacheConfiguration(
-    update_after=timedelta(minutes=15), expire_after=timedelta(minutes=30)
-))
+
+@memoize(
+    configuration=DefaultInMemoryCacheConfiguration(
+        update_after=timedelta(minutes=15), expire_after=timedelta(minutes=30)
+    )
+)
 async def latest_github_release_version() -> str:
     try:
         async with aiohttp.ClientSession() as session:
@@ -34,4 +37,4 @@ async def latest_github_release_version() -> str:
         print(f"GitHub API request failed: {e}")
         traceback.print_exc()
 
-    return ''
+    return ""

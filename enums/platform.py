@@ -1,5 +1,6 @@
 from enum import StrEnum
 
+
 class Platform(StrEnum):
     WIN = "Windows"
     MAC = "Mac"

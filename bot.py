@@ -21,7 +21,6 @@ from utils.init_database import load_database
 # https://discord.com/api/oauth2/authorize?client_id=1236022326773022800&permissions=2415919104&scope=bot%20applications.commands
 
 
-
 # ------------------------------------- GLOBAL INITS
 dotenv.load_dotenv()
 
@@ -34,13 +33,14 @@ intents.presences = True
 intents.message_content = True
 
 discord.utils.setup_logging()
-discord.VoiceClient.warn_nacl = False  # doesn't need voice perms, it's a role assign bot
+discord.VoiceClient.warn_nacl = (
+    False  # doesn't need voice perms, it's a role assign bot
+)
 client = discord.Client(intents=intents)
 
 tree = discord_command.CommandTree(client)
 
 bot_utils = utils.BotUtils(client, settings, tree)
-
 
 
 # ------------------------------------- EVENTS
@@ -51,22 +51,28 @@ async def on_ready():
         await bot_utils.setup_guild(guild)
     client.loop.create_task(bot_utils.update_apps_periodically())
 
+
 @client.event
 async def on_guild_join(guild: discord.Guild):
     await bot_utils.setup_guild(guild)
+
 
 @client.event
 async def on_guild_remove(guild: discord.Guild):
     if settings.dexists("roles", str(guild.id)):
         settings.dpop("roles", str(guild.id))
 
+
 @client.event
 async def on_presence_update(_: discord.Member, member: discord.Member):
     await bot_utils.check_member(member)
 
+
 # Annoyingly required catch when member cannot be found by Discord else we get interaction timeout & ugly error
 @tree.error
-async def on_app_command_error(interaction: discord.Interaction, error: discord_command.AppCommandError):
+async def on_app_command_error(
+    interaction: discord.Interaction, error: discord_command.AppCommandError
+):
     global tree
 
     if interaction.command and interaction.command.name == enums.Command.JOINED:
@@ -80,16 +86,19 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord_
     original_error_handler = tree.on_error
     await original_error_handler(interaction, error)
 
+
 # Technically we should observe updates to roles
 # that the listener roles depend on too but that happens so infrequently,
 # we might as well wait until the presence has been updated.
 
 
-
 # ------------------------------------- COMMANDS
 @tree.command(name=enums.Command.ROLE, description=enums.Command.ROLE.description())
 async def command_set_role(
-    interaction: discord.Interaction, for_role: Optional[discord.Role], listener_role: Optional[discord.Role], summary: Optional[bool],
+    interaction: discord.Interaction,
+    for_role: Optional[discord.Role],
+    listener_role: Optional[discord.Role],
+    summary: Optional[bool],
 ):
     global settings
 
@@ -173,6 +182,7 @@ async def command_set_role(
         allowed_mentions=discord.AllowedMentions(roles=False),
     )
 
+
 @tree.command(name=enums.Command.ROLES, description=enums.Command.ROLES.description())
 async def command_list_roles(interaction: discord.Interaction):
     if not settings.dexists("roles", str(interaction.guild.id)):
@@ -186,9 +196,12 @@ async def command_list_roles(interaction: discord.Interaction):
         allowed_mentions=discord.AllowedMentions(roles=False),
     )
 
+
 @tree.command(name=enums.Command.JOINED, description=enums.Command.JOINED.description())
 @discord_command.describe(member="The member to check (leave empty to check yourself)")
-async def command_joined_stats(interaction: discord.Interaction, member: discord.Member = None):
+async def command_joined_stats(
+    interaction: discord.Interaction, member: discord.Member = None
+):
     target_member = member or interaction.user
     guild = interaction.guild
     members_by_join_date = sorted(
@@ -236,7 +249,9 @@ async def command_joined_stats(interaction: discord.Interaction, member: discord
 
     percentage = 0
     if total_members > 1:
-        percentage = round(((total_members - member_number) / (total_members - 1)) * 100, 1)
+        percentage = round(
+            ((total_members - member_number) / (total_members - 1)) * 100, 1
+        )
 
     embed.add_field(
         name="Early Bird Percentage",
@@ -249,8 +264,13 @@ async def command_joined_stats(interaction: discord.Interaction, member: discord
 
     await interaction.response.send_message(embed=embed)
 
-@tree.command(name=enums.Command.LISTENING, description=enums.Command.LISTENING.description())
-async def command_listening_role(interaction: discord.Interaction, delete: Optional[bool]):
+
+@tree.command(
+    name=enums.Command.LISTENING, description=enums.Command.LISTENING.description()
+)
+async def command_listening_role(
+    interaction: discord.Interaction, delete: Optional[bool]
+):
     guild_member = None
     for member in interaction.guild.members:
         if member.id == interaction.user.id:
@@ -310,6 +330,7 @@ async def command_listening_role(interaction: discord.Interaction, delete: Optio
 
     await bot_utils.check_member(guild_member)
 
+
 @tree.command(name=enums.Command.STOP, description=enums.Command.STOP.description())
 async def command_stop(interaction: discord.Interaction):
     for guild in client.guilds:
@@ -318,22 +339,39 @@ async def command_stop(interaction: discord.Interaction):
     await interaction.response.send_message("Removed all roles, stopping now")
     await client.close()
 
+
 @tree.command(name=enums.Command.LOGS, description=enums.Command.LOGS.description())
-@discord_command.choices(os=[
-    discord_command.Choice(name="Windows", value=enums.Platform.WIN),
-    discord_command.Choice(name="Mac", value=enums.Platform.MAC),
-    discord_command.Choice(name="Linux", value=enums.Platform.LIN),
-])
-async def command_logs(interaction: discord.Interaction, os: discord_command.Choice[str] = None):
+@discord_command.choices(
+    os=[
+        discord_command.Choice(name="Windows", value=enums.Platform.WIN),
+        discord_command.Choice(name="Mac", value=enums.Platform.MAC),
+        discord_command.Choice(name="Linux", value=enums.Platform.LIN),
+    ]
+)
+async def command_logs(
+    interaction: discord.Interaction, os: discord_command.Choice[str] = None
+):
     await bot_utils.logs_response(interaction, os.value if os is not None else None)
 
+
 @tree.command(name=enums.Command.HELP, description=enums.Command.HELP.description())
-@discord_command.choices(topic=[
-    discord_command.Choice(name=enums.HelpTopic.INSTALL, value=enums.HelpTopic.INSTALL),
-    discord_command.Choice(name=enums.HelpTopic.PLAYER_DETECTION, value=enums.HelpTopic.PLAYER_DETECTION),
-    discord_command.Choice(name=enums.HelpTopic.APP_LOGS, value=enums.HelpTopic.APP_LOGS),
-])
-async def command_help(interaction: discord.Interaction, topic: discord_command.Choice[str] = None):
+@discord_command.choices(
+    topic=[
+        discord_command.Choice(
+            name=enums.HelpTopic.INSTALL, value=enums.HelpTopic.INSTALL
+        ),
+        discord_command.Choice(
+            name=enums.HelpTopic.PLAYER_DETECTION,
+            value=enums.HelpTopic.PLAYER_DETECTION,
+        ),
+        discord_command.Choice(
+            name=enums.HelpTopic.APP_LOGS, value=enums.HelpTopic.APP_LOGS
+        ),
+    ]
+)
+async def command_help(
+    interaction: discord.Interaction, topic: discord_command.Choice[str] = None
+):
     value = enums.HelpTopic(topic.value) if topic is not None else None
     view = discord.utils.MISSING
     if value == enums.HelpTopic.INSTALL:
@@ -348,16 +386,26 @@ async def command_help(interaction: discord.Interaction, topic: discord_command.
     elif value == enums.HelpTopic.APP_LOGS:
         return await bot_utils.logs_response(interaction)
 
-    await interaction.response.send_message(bot_utils.get_help_message(value), view=view)
+    await interaction.response.send_message(
+        bot_utils.get_help_message(value), view=view
+    )
 
-@tree.command(name=enums.Command.TESTER_COVERAGE, description=enums.Command.TESTER_COVERAGE.description())
+
+@tree.command(
+    name=enums.Command.TESTER_COVERAGE,
+    description=enums.Command.TESTER_COVERAGE.description(),
+)
 async def command_tester_coverage(interaction: discord.Interaction):
     guild = interaction.guild
     beta_tester_role = guild.get_role(ROLE_BETA_TESTER)
     if beta_tester_role is None:
-        return await interaction.response.send_message('Beta tester role not found. :thinking:')
+        return await interaction.response.send_message(
+            "Beta tester role not found. :thinking:"
+        )
     elif len(beta_tester_role.members) == 0:
-        return await interaction.response.send_message('No beta testers found yet ! :confused:')
+        return await interaction.response.send_message(
+            "No beta testers found yet ! :confused:"
+        )
 
     os_roles = []
     for role_id in ROLES_OS:
@@ -365,11 +413,12 @@ async def command_tester_coverage(interaction: discord.Interaction):
         if role is not None:
             os_roles.append(role)
     if len(os_roles) == 0:
-        return await interaction.response.send_message('No OS roles found. :thinking:')
+        return await interaction.response.send_message("No OS roles found. :thinking:")
 
     coverage = bot_utils.tester_coverage_compute(beta_tester_role, os_roles)
     embed = bot_utils.tester_coverage_make_embed(beta_tester_role, os_roles, coverage)
 
     await interaction.response.send_message(embed=embed)
+
 
 client.run(os.getenv("BOT_TOKEN"))

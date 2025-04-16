@@ -1,5 +1,6 @@
 from discord import ui
 
+
 class LinkButtons(ui.View):
     def __init__(self, labelled_urls: list[tuple[str, str]]):
         super().__init__()

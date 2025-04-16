@@ -1,5 +1,6 @@
 from enum import StrEnum
 
+
 class Command(StrEnum):
     ROLE = "role"
     ROLES = "roles"
@@ -8,7 +9,7 @@ class Command(StrEnum):
     STOP = "stop"
     LOGS = "logs"
     HELP = "help"
-    TESTER_COVERAGE = 'testers-coverage'
+    TESTER_COVERAGE = "testers-coverage"
 
     def description(self) -> str:
         return {

@@ -12,8 +12,15 @@ from collections import defaultdict
 from typing import Optional
 from time import time
 
-from enums.constants import MIN_RETENTION_UPDATE_INTERVAL, MAX_USER_APP_ID_RETENTION, MUSIC_APP_ID, PODCAST_APP_ID, \
-    PLAYERS_JSON_URL, HELP_DOWNLOAD_URLS_FORMAT, HELP_MESSAGE_LINES
+from enums.constants import (
+    MIN_RETENTION_UPDATE_INTERVAL,
+    MAX_USER_APP_ID_RETENTION,
+    MUSIC_APP_ID,
+    PODCAST_APP_ID,
+    PLAYERS_JSON_URL,
+    HELP_DOWNLOAD_URLS_FORMAT,
+    HELP_MESSAGE_LINES,
+)
 from utils.github_cached import latest_github_release_version
 
 
@@ -21,14 +28,22 @@ def rreplace(s: str, old: str, new: str, occurrence: int = 1):
     li = s.rsplit(old, occurrence)
     return new.join(li)
 
+
 # Find a better name maybe
 class BotUtils:
-    def __init__(self, client: discord.Client, settings: pickledb.PickleDB, tree: discord.app_commands.CommandTree):
+    def __init__(
+        self,
+        client: discord.Client,
+        settings: pickledb.PickleDB,
+        tree: discord.app_commands.CommandTree,
+    ):
         self.client = client
         self.settings = settings
         self.tree = tree
 
-    def get_role_listener(self, guild: discord.Guild, role: discord.Role) -> discord.Role | None:
+    def get_role_listener(
+        self, guild: discord.Guild, role: discord.Role
+    ) -> discord.Role | None:
         role_id = str(role.id)
         guild_id = str(guild.id)
         if self.settings.dexists("roles", guild_id):
@@ -79,7 +94,9 @@ class BotUtils:
             if listener_role in member.roles:
                 await member.remove_roles(listener_role)
 
-    async def clear_role_listener_of_role(self, guild: discord.Guild, role: discord.Role) -> discord.Role | None:
+    async def clear_role_listener_of_role(
+        self, guild: discord.Guild, role: discord.Role
+    ) -> discord.Role | None:
         listener_role = self.get_role_listener(guild, role)
         if listener_role is not None:
             for member in listener_role.members:
@@ -104,12 +121,12 @@ class BotUtils:
 
         for activity in member.activities:
             if (
-                    not isinstance(activity, discord.Spotify)
-                    and isinstance(activity, discord.Activity)
-                    and (
+                not isinstance(activity, discord.Spotify)
+                and isinstance(activity, discord.Activity)
+                and (
                     str(activity.application_id) in apps
                     or str(activity.application_id) in user_apps
-            )
+                )
             ):
                 app_id_key = str(activity.application_id)
                 if app_id_key in user_apps:
@@ -138,7 +155,9 @@ class BotUtils:
     async def setup_guild(self, guild: discord.Guild):
         self.tree.copy_global_to(guild=guild)
         commands = await self.tree.sync(guild=guild)
-        print(f"Synced {len(commands)} commands: {', '.join([c.name for c in commands])}")
+        print(
+            f"Synced {len(commands)} commands: {', '.join([c.name for c in commands])}"
+        )
 
     async def purge_user_app_ids(self):
         apps = self.settings.get("apps")
@@ -167,10 +186,7 @@ class BotUtils:
         self.settings.set("user_apps", sanitized)
 
     async def update_apps(self):
-        result = {
-            str(MUSIC_APP_ID): True,
-            str(PODCAST_APP_ID): True
-        }
+        result = {str(MUSIC_APP_ID): True, str(PODCAST_APP_ID): True}
 
         # TODO clean this up
         async with aiohttp.ClientSession() as session:
@@ -181,7 +197,10 @@ class BotUtils:
 
                 players = json.loads(await response.read())
                 for player in players["players"]:
-                    if "extra" in player and "discord_application_id" in player["extra"]:
+                    if (
+                        "extra" in player
+                        and "discord_application_id" in player["extra"]
+                    ):
                         app_id = player["extra"]["discord_application_id"]
                         result[str(app_id)] = True
                     else:
@@ -217,7 +236,9 @@ class BotUtils:
 
         return "\n".join(lines)
 
-    def tester_coverage_compute(self, beta_tester_role: discord.Role, os_roles: list[discord.Role]) -> dict[int, list[discord.Member]]:
+    def tester_coverage_compute(
+        self, beta_tester_role: discord.Role, os_roles: list[discord.Role]
+    ) -> dict[int, list[discord.Member]]:
         coverage: dict[int, list[discord.Member]] = {}
         for os_role in os_roles:
             coverage[os_role.id] = []
@@ -229,8 +250,13 @@ class BotUtils:
 
         return coverage
 
-    def tester_coverage_make_embed(self, beta_tester_role: discord.Role, os_roles: list[discord.Role], coverage: dict[int, list[discord.Member]]) -> discord.Embed:
-        embed = discord.Embed(title='Music Presence users tests coverage')
+    def tester_coverage_make_embed(
+        self,
+        beta_tester_role: discord.Role,
+        os_roles: list[discord.Role],
+        coverage: dict[int, list[discord.Member]],
+    ) -> discord.Embed:
+        embed = discord.Embed(title="Music Presence users tests coverage")
         embed.add_field(
             name=f"{len(beta_tester_role.members)} beta tester{'s' if len(beta_tester_role.members) > 1 else ''}",
             value=f"> {', '.join([f"<@{m.id}>" for m in beta_tester_role.members])}\n\n",
@@ -248,7 +274,9 @@ class BotUtils:
 
         return embed
 
-    async def logs_response(self, interaction: discord.Interaction, platform: enums.Platform | None = None):
+    async def logs_response(
+        self, interaction: discord.Interaction, platform: enums.Platform | None = None
+    ):
         lines = ["You can find the log file for Music Presence"]
         if platform is None:
             lines[0] += " here:"
@@ -264,7 +292,8 @@ class BotUtils:
     async def get_download_urls(self) -> list[tuple[str, str]]:
         version = await latest_github_release_version()
         return [
-            (name, url.format(version=version)) for name, url in HELP_DOWNLOAD_URLS_FORMAT
+            (name, url.format(version=version))
+            for name, url in HELP_DOWNLOAD_URLS_FORMAT
         ]
 
     def get_help_message(self, topic: Optional[enums.HelpTopic]):
