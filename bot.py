@@ -9,8 +9,7 @@ import utils
 
 from time import time
 from typing import Optional
-from discord import Guild, Role, Member, AllowedMentions, Interaction, app_commands as discord_command
-from discord.app_commands import Choice
+from discord import app_commands as discord_command
 
 from enums.constants import HELP_TROUBLESHOOTING_URLS, ROLE_BETA_TESTER, ROLES_OS
 from utils.init_database import load_database
@@ -26,7 +25,7 @@ from utils.init_database import load_database
 # ------------------------------------- GLOBAL INITS
 dotenv.load_dotenv()
 
-database = load_database()
+settings = load_database()
 
 intents = discord.Intents.default()
 intents.guilds = True
@@ -40,7 +39,7 @@ client = discord.Client(intents=intents)
 
 tree = discord_command.CommandTree(client)
 
-bot_utils = utils.BotUtils(client, database, tree)
+bot_utils = utils.BotUtils(client, settings, tree)
 
 
 
@@ -53,21 +52,21 @@ async def on_ready():
     client.loop.create_task(bot_utils.update_apps_periodically())
 
 @client.event
-async def on_guild_join(guild: Guild):
+async def on_guild_join(guild: discord.Guild):
     await bot_utils.setup_guild(guild)
 
 @client.event
-async def on_guild_remove(guild: Guild):
-    if database.dexists("roles", str(guild.id)):
-        database.dpop("roles", str(guild.id))
+async def on_guild_remove(guild: discord.Guild):
+    if settings.dexists("roles", str(guild.id)):
+        settings.dpop("roles", str(guild.id))
 
 @client.event
-async def on_presence_update(_: Member, member: Member):
+async def on_presence_update(_: discord.Member, member: discord.Member):
     await bot_utils.check_member(member)
 
 # Annoyingly required catch when member cannot be found by Discord else we get interaction timeout & ugly error
 @tree.error
-async def on_app_command_error(interaction: Interaction, error: discord_command.AppCommandError):
+async def on_app_command_error(interaction: discord.Interaction, error: discord_command.AppCommandError):
     global tree
 
     if interaction.command and interaction.command.name == enums.Command.JOINED:
@@ -90,9 +89,9 @@ async def on_app_command_error(interaction: Interaction, error: discord_command.
 # ------------------------------------- COMMANDS
 @tree.command(name=enums.Command.ROLE, description=enums.Command.ROLE.description())
 async def command_set_role(
-    interaction: Interaction, for_role: Optional[Role], listener_role: Optional[Role], summary: Optional[bool],
+    interaction: discord.Interaction, for_role: Optional[discord.Role], listener_role: Optional[discord.Role], summary: Optional[bool],
 ):
-    global database
+    global settings
 
     if interaction.guild_id is None:
         return await interaction.response.send_message("No guild ID for interaction")
@@ -104,46 +103,46 @@ async def command_set_role(
 
     is_reset = not listener_role
     guild_id = str(interaction.guild.id)
-    if not database.dexists("roles", guild_id):
+    if not settings.dexists("roles", guild_id):
         if is_reset:
             return await interaction.response.send_message(
                 "No listener roles configured"
             )
-        database.dadd("roles", (guild_id, {}))
+        settings.dadd("roles", (guild_id, {}))
 
     if is_reset and not for_role:
         await bot_utils.remove_all_listener_roles_from_all(interaction.guild)
-        database.dpop("roles", str(interaction.guild.id))
+        settings.dpop("roles", str(interaction.guild.id))
         return await interaction.response.send_message(
             "Removed all listener roles from all members"
         )
 
-    guild_roles = database.dget("roles", guild_id)
+    guild_roles = settings.dget("roles", guild_id)
     if is_reset and for_role:
         if str(for_role.id) in guild_roles:
-            listener_role = await bot_utils.remove_listener_role_from_all(
+            listener_role = await bot_utils.clear_role_listener_of_role(
                 interaction.guild, for_role
             )
             listener_role_id = guild_roles[str(for_role.id)]
             assert listener_role is not None and listener_role.id == listener_role_id
             del guild_roles[str(for_role.id)]
-            database.dadd("roles", (guild_id, guild_roles))
+            settings.dadd("roles", (guild_id, guild_roles))
             return await interaction.response.send_message(
                 f"Disabled monitoring for <@&{for_role.id}> "
                 f"and removed the <@&{listener_role_id}> role from all members",
-                allowed_mentions=AllowedMentions(roles=False),
+                allowed_mentions=discord.discord.AllowedMentions(roles=False),
             )
         else:
             return await interaction.response.send_message(
                 f"No listener role configured for role <@&{for_role.id}>",
-                allowed_mentions=AllowedMentions(roles=False),
+                allowed_mentions=discord.discord.AllowedMentions(roles=False),
             )
 
     if str(listener_role.id) in guild_roles:
         return await interaction.response.send_message(
             f"Cannot use <@&{listener_role.id}> as a listener role. "
             "It is already used as a requirement for a listener role",
-            allowed_mentions=AllowedMentions(roles=False),
+            allowed_mentions=discord.AllowedMentions(roles=False),
         )
 
     for other_listener_role_id in guild_roles.values():
@@ -151,7 +150,7 @@ async def command_set_role(
             return await interaction.response.send_message(
                 f"Cannot use <@&{for_role.id}> as a requirement for a listener role. "
                 "It is already used as a listener role",
-                allowed_mentions=AllowedMentions(roles=False),
+                allowed_mentions=discord.AllowedMentions(roles=False),
             )
 
     if not listener_role.is_assignable():
@@ -166,17 +165,17 @@ async def command_set_role(
         )
 
     guild_roles[str(for_role.id)] = listener_role.id
-    database.dadd("roles", (guild_id, guild_roles))
+    settings.dadd("roles", (guild_id, guild_roles))
     await bot_utils.check_guild(interaction.guild)
     await interaction.response.send_message(
         f"Listener role for <@&{for_role.id}> is now <@&{listener_role.id}>"
         + (f"\n{bot_utils.get_role_overview(interaction.guild)}" if summary else ""),
-        allowed_mentions=AllowedMentions(roles=False),
+        allowed_mentions=discord.AllowedMentions(roles=False),
     )
 
 @tree.command(name=enums.Command.ROLES, description=enums.Command.ROLES.description())
-async def command_list_roles(interaction: Interaction):
-    if not database.dexists("roles", str(interaction.guild.id)):
+async def command_list_roles(interaction: discord.Interaction):
+    if not settings.dexists("roles", str(interaction.guild.id)):
         return await interaction.response.send_message(
             "No listener roles configured for this server"
         )
@@ -184,12 +183,12 @@ async def command_list_roles(interaction: Interaction):
     overview = bot_utils.get_role_overview(interaction.guild)
     await interaction.response.send_message(
         overview,
-        allowed_mentions=AllowedMentions(roles=False),
+        allowed_mentions=discord.AllowedMentions(roles=False),
     )
 
 @tree.command(name=enums.Command.JOINED, description=enums.Command.JOINED.description())
 @discord_command.describe(member="The member to check (leave empty to check yourself)")
-async def command_joined_stats(interaction: Interaction, member: Member = None):
+async def command_joined_stats(interaction: discord.Interaction, member: discord.Member = None):
     target_member = member or interaction.user
     guild = interaction.guild
     members_by_join_date = sorted(
@@ -251,7 +250,7 @@ async def command_joined_stats(interaction: Interaction, member: Member = None):
     await interaction.response.send_message(embed=embed)
 
 @tree.command(name=enums.Command.LISTENING, description=enums.Command.LISTENING.description())
-async def command_listening_role(interaction: Interaction, delete: Optional[bool]):
+async def command_listening_role(interaction: discord.Interaction, delete: Optional[bool]):
     guild_member = None
     for member in interaction.guild.members:
         if member.id == interaction.user.id:
@@ -265,7 +264,7 @@ async def command_listening_role(interaction: Interaction, delete: Optional[bool
 
     user_id = guild_member.id
     if delete:
-        database.dpop("user_apps", str(user_id))
+        settings.dpop("user_apps", str(user_id))
         await bot_utils.check_member(guild_member)
         await interaction.response.send_message(
             f"Removed any registered app IDs for <@{user_id}>"
@@ -283,20 +282,22 @@ async def command_listening_role(interaction: Interaction, delete: Optional[bool
             if app_id is None:
                 continue
 
-            if database.dexists("apps", str(app_id)):
+            if settings.dexists("apps", str(app_id)):
                 await interaction.response.send_message(
                     f"App ID `{app_id}` is already known"
                 )
                 return
 
-            if not database.dexists("user_apps", str(user_id)):
-                database.dadd("user_apps", (str(user_id), {}))
+            if not settings.dexists("user_apps", str(user_id)):
+                settings.dadd("user_apps", (str(user_id), {}))
 
-            user_apps = database.dget("user_apps", str(user_id))
+            user_apps = settings.dget("user_apps", str(user_id))
             # Only one custom app ID is allowed per user.
             user_apps.clear()
-            user_apps[str(app_id)] = dataclasses.asdict(objects.UserApp(app_id, guild_member.id, int(time())))
-            database.dadd("user_apps", (str(user_id), user_apps))
+            user_apps[str(app_id)] = dataclasses.asdict(
+                objects.UserApp(app_id, user_id=guild_member.id, timestamp=int(time()))
+            )
+            settings.dadd("user_apps", (str(user_id), user_apps))
             await interaction.response.send_message(
                 f"Registered listening role for app ID `{app_id}` for <@{user_id}>"
             )
@@ -310,7 +311,7 @@ async def command_listening_role(interaction: Interaction, delete: Optional[bool
     await bot_utils.check_member(guild_member)
 
 @tree.command(name=enums.Command.STOP, description=enums.Command.STOP.description())
-async def command_stop(interaction: Interaction):
+async def command_stop(interaction: discord.Interaction):
     for guild in client.guilds:
         await bot_utils.remove_all_listener_roles_from_all(guild)
 
@@ -319,20 +320,20 @@ async def command_stop(interaction: Interaction):
 
 @tree.command(name=enums.Command.LOGS, description=enums.Command.LOGS.description())
 @discord_command.choices(os=[
-    Choice(name="Windows", value=enums.Platform.WIN),
-    Choice(name="Mac", value=enums.Platform.MAC),
-    Choice(name="Linux", value=enums.Platform.LIN),
+    discord_command.Choice(name="Windows", value=enums.Platform.WIN),
+    discord_command.Choice(name="Mac", value=enums.Platform.MAC),
+    discord_command.Choice(name="Linux", value=enums.Platform.LIN),
 ])
-async def command_logs(interaction: Interaction, os: Choice[str] = None):
+async def command_logs(interaction: discord.Interaction, os: discord_command.Choice[str] = None):
     await bot_utils.logs_response(interaction, os.value if os is not None else None)
 
 @tree.command(name=enums.Command.HELP, description=enums.Command.HELP.description())
 @discord_command.choices(topic=[
-    Choice(name=enums.HelpTopic.INSTALL, value=enums.HelpTopic.INSTALL),
-    Choice(name=enums.HelpTopic.PLAYER_DETECTION, value=enums.HelpTopic.PLAYER_DETECTION),
-    Choice(name=enums.HelpTopic.APP_LOGS, value=enums.HelpTopic.APP_LOGS),
+    discord_command.Choice(name=enums.HelpTopic.INSTALL, value=enums.HelpTopic.INSTALL),
+    discord_command.Choice(name=enums.HelpTopic.PLAYER_DETECTION, value=enums.HelpTopic.PLAYER_DETECTION),
+    discord_command.Choice(name=enums.HelpTopic.APP_LOGS, value=enums.HelpTopic.APP_LOGS),
 ])
-async def command_help(interaction: Interaction, topic: Choice[str] = None):
+async def command_help(interaction: discord.Interaction, topic: discord_command.Choice[str] = None):
     value = enums.HelpTopic(topic.value) if topic is not None else None
     view = discord.utils.MISSING
     if value == enums.HelpTopic.INSTALL:
@@ -350,7 +351,7 @@ async def command_help(interaction: Interaction, topic: Choice[str] = None):
     await interaction.response.send_message(bot_utils.get_help_message(value), view=view)
 
 @tree.command(name=enums.Command.TESTER_COVERAGE, description=enums.Command.TESTER_COVERAGE.description())
-async def command_tester_coverage(interaction: Interaction):
+async def command_tester_coverage(interaction: discord.Interaction):
     guild = interaction.guild
     beta_tester_role = guild.get_role(ROLE_BETA_TESTER)
     if beta_tester_role is None:
