@@ -9,7 +9,7 @@ import utils
 
 from time import time
 from typing import Optional
-from discord import app_commands as discord_command
+from discord import AllowedMentions, app_commands as discord_command
 
 from enums.constants import HELP_TROUBLESHOOTING_URLS, ROLE_BETA_TESTER, ROLES_OS
 from utils.init_database import load_database
@@ -139,19 +139,19 @@ async def command_set_role(
             return await interaction.response.send_message(
                 f"Disabled monitoring for <@&{for_role.id}> "
                 f"and removed the <@&{listener_role_id}> role from all members",
-                allowed_mentions=discord.discord.AllowedMentions(roles=False),
+                allowed_mentions=AllowedMentions(roles=False),
             )
         else:
             return await interaction.response.send_message(
                 f"No listener role configured for role <@&{for_role.id}>",
-                allowed_mentions=discord.discord.AllowedMentions(roles=False),
+                allowed_mentions=AllowedMentions(roles=False),
             )
 
     if str(listener_role.id) in guild_roles:
         return await interaction.response.send_message(
             f"Cannot use <@&{listener_role.id}> as a listener role. "
             "It is already used as a requirement for a listener role",
-            allowed_mentions=discord.AllowedMentions(roles=False),
+            allowed_mentions=AllowedMentions(roles=False),
         )
 
     for other_listener_role_id in guild_roles.values():
@@ -159,7 +159,7 @@ async def command_set_role(
             return await interaction.response.send_message(
                 f"Cannot use <@&{for_role.id}> as a requirement for a listener role. "
                 "It is already used as a listener role",
-                allowed_mentions=discord.AllowedMentions(roles=False),
+                allowed_mentions=AllowedMentions(roles=False),
             )
 
     if not listener_role.is_assignable():
@@ -179,7 +179,7 @@ async def command_set_role(
     await interaction.response.send_message(
         f"Listener role for <@&{for_role.id}> is now <@&{listener_role.id}>"
         + (f"\n{bot_utils.get_role_overview(interaction.guild)}" if summary else ""),
-        allowed_mentions=discord.AllowedMentions(roles=False),
+        allowed_mentions=AllowedMentions(roles=False),
     )
 
 
@@ -193,7 +193,7 @@ async def command_list_roles(interaction: discord.Interaction):
     overview = bot_utils.get_role_overview(interaction.guild)
     await interaction.response.send_message(
         overview,
-        allowed_mentions=discord.AllowedMentions(roles=False),
+        allowed_mentions=AllowedMentions(roles=False),
     )
 
 
