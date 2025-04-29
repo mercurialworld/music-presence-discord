@@ -175,12 +175,12 @@ async def command_set_role(
 
     guild_roles[str(for_role.id)] = listener_role.id
     settings.dadd("roles", (guild_id, guild_roles))
-    await bot_utils.check_guild(interaction.guild)
     await interaction.response.send_message(
         f"Listener role for <@&{for_role.id}> is now <@&{listener_role.id}>"
         + (f"\n{bot_utils.get_role_overview(interaction.guild)}" if summary else ""),
         allowed_mentions=discord.AllowedMentions(roles=False),
     )
+    await bot_utils.check_guild(interaction.guild)
 
 
 @tree.command(name=enums.Command.ROLES, description=enums.Command.ROLES.description())
