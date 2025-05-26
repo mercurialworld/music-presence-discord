@@ -11,10 +11,11 @@ class Command(StrEnum):
     HELP = "help"
     TESTER_COVERAGE = "testers-coverage"
     MACROS = "macros"
-    MACROS_CREATE = "macros create"
-    MACROS_EDIT = "macros edit"
-    MACROS_SHOW = "macros show"
-    MACROS_DELETE = "macros delete"
+    MACROS_CREATE = "create"
+    MACROS_EDIT = "edit"
+    MACROS_SHOW = "show"
+    MACROS_LIST = "list"
+    MACROS_DELETE = "delete"
 
     def description(self) -> str:
         return {
@@ -30,5 +31,6 @@ class Command(StrEnum):
             self.MACROS_CREATE: "Creates a new macro. Moderator only.",
             self.MACROS_EDIT: "Edits an existing macro. Moderator only.",
             self.MACROS_SHOW: "Shows a macro, and optionally mentions someone. Moderator only.",
+            self.MACROS_LIST: "Lists all created macros. Moderator only.",
             self.MACROS_DELETE: "Deletes a macro. Moderator only.",
         }[self]

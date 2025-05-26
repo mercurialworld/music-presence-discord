@@ -10,6 +10,7 @@ class MacroEmbed:
         )
         self.macro = macro
 
+    # This is a function because you cannot add images to the end of an embed regularly
     def show_embed(self) -> discord.Embed:
         embed = discord.Embed(
             title=self.macro.title, description=self.macro.description, color=self.color

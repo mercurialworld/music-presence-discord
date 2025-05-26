@@ -1,3 +1,4 @@
+import math
 import os
 import dotenv
 import dataclasses
@@ -13,9 +14,20 @@ from time import time
 from typing import Optional
 from discord import app_commands as discord_command
 
-from enums.constants import HELP_TROUBLESHOOTING_URLS, ROLE_BETA_TESTER, ROLES_OS
+from enums.constants import (
+    HELP_TROUBLESHOOTING_URLS,
+    ROLE_BETA_TESTER,
+    ROLES_OS,
+    ROLES_USE_MACROS,
+)
 from utils.init_database import load_macros_database, load_settings_database
-from utils.macros_database import delete_macro, get_macro, macro_names, macro_search
+from utils.macros_database import (
+    delete_macro,
+    get_macro,
+    macro_names,
+    macro_search,
+    macros_list,
+)
 
 # Required permissions:
 # - Manage Roles (required to set and remove roles from members)
@@ -430,16 +442,21 @@ macros_group = discord_command.Group(
 )
 
 
-@macros_group.command(description=enums.Command.MACROS_CREATE.description())
-@discord_command.checks.has_any_role("Moderator")
+@macros_group.command(
+    name=enums.Command.MACROS_CREATE,
+    description=enums.Command.MACROS_CREATE.description(),
+)
+@discord_command.checks.has_any_role(*ROLES_USE_MACROS)
 async def create(interaction: discord.Interaction, name: str):
     await interaction.response.send_modal(
         MacroCreate(macro_name=name, macros_db=bot_utils.macros_db)
     )
 
 
-@macros_group.command(description=enums.Command.MACROS_SHOW.description())
-@discord_command.checks.has_any_role("Moderator")
+@macros_group.command(
+    name=enums.Command.MACROS_SHOW, description=enums.Command.MACROS_SHOW.description()
+)
+@discord_command.checks.has_any_role(*ROLES_USE_MACROS)
 async def show(
     interaction: discord.Interaction, name: str, mention: discord.Member | None
 ):
@@ -460,8 +477,10 @@ async def show(
         )
 
 
-@macros_group.command(description=enums.Command.MACROS_EDIT.description())
-@discord_command.checks.has_any_role("Moderator")
+@macros_group.command(
+    name=enums.Command.MACROS_EDIT, description=enums.Command.MACROS_EDIT.description()
+)
+@discord_command.checks.has_any_role(*ROLES_USE_MACROS)
 async def edit(interaction: discord.Interaction, name: str):
     macro = get_macro(bot_utils.macros_db, name)
 
@@ -470,8 +489,28 @@ async def edit(interaction: discord.Interaction, name: str):
     )
 
 
-@macros_group.command(description=enums.Command.MACROS_DELETE.description())
-@discord_command.checks.has_any_role("Moderator")
+# Works for now, might be a problem in the future
+@macros_group.command(
+    name=enums.Command.MACROS_LIST, description=enums.Command.MACROS_LIST.description()
+)
+@discord_command.checks.has_any_role(*ROLES_USE_MACROS)
+async def list_macros(interaction: discord.Interaction):
+    macros = macros_list(bot_utils.macros_db)
+    message_text = "There are no macros!"
+
+    if macros is not None:
+        message_text = "# List of macros:\n"
+        for macro in macros:
+            message_text += f"- `{macro.name}` by {client.get_user(macro.creator).name} - last edited <t:{math.floor(macro.date_edited)}:f>\n"
+
+    await interaction.response.send_message(message_text, ephemeral=True)
+
+
+@macros_group.command(
+    name=enums.Command.MACROS_DELETE,
+    description=enums.Command.MACROS_DELETE.description(),
+)
+@discord_command.checks.has_any_role(*ROLES_USE_MACROS)
 async def remove(interaction: discord.Interaction, name: str):
     if delete_macro(bot_utils.macros_db, name) == 1:
         await interaction.response.send_message(

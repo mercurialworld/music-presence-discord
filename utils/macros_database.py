@@ -70,6 +70,17 @@ def macro_names(conn: sqlite3.Connection) -> tuple | None:
     return res.fetchall()
 
 
+def macros_list(conn: sqlite3.Connection) -> tuple | None:
+    cur = conn.cursor()
+
+    res = cur.execute("SELECT * FROM macros")
+
+    macros = res.fetchall()
+    return (
+        [Macro(*macro_tuple) for macro_tuple in macros] if macros is not None else None
+    )
+
+
 def macro_search(conn: sqlite3.Connection, name: str) -> tuple | None:
     cur = conn.cursor()
 
