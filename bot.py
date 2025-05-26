@@ -437,7 +437,10 @@ async def command_tester_coverage(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 
-@tree.command(name=enums.Command.MACRO, description=enums.Command.MACRO.description())
+@tree.command(
+    name=enums.Command.MACRO,
+    description=enums.Command.MACRO.description(),
+)
 @discord_command.checks.has_any_role(*ROLES_USE_MACROS)
 async def macro(
     interaction: discord.Interaction, name: str, mention: discord.Member | None
@@ -460,7 +463,8 @@ async def macro(
 
 
 macros_group = discord_command.Group(
-    name=enums.Command.MACROS, description=enums.Command.MACROS.description()
+    name=enums.Command.MACROS,
+    description=enums.Command.MACROS.description(),
 )
 
 
@@ -481,7 +485,8 @@ async def create(interaction: discord.Interaction, name: str):
 
 
 @macros_group.command(
-    name=enums.Command.MACROS_EDIT, description=enums.Command.MACROS_EDIT.description()
+    name=enums.Command.MACROS_EDIT,
+    description=enums.Command.MACROS_EDIT.description(),
 )
 @discord_command.checks.has_any_role(*ROLES_USE_MACROS)
 async def edit(interaction: discord.Interaction, name: str):
@@ -494,7 +499,8 @@ async def edit(interaction: discord.Interaction, name: str):
 
 # Works for now, might be a problem in the future
 @macros_group.command(
-    name=enums.Command.MACROS_LIST, description=enums.Command.MACROS_LIST.description()
+    name=enums.Command.MACROS_LIST,
+    description=enums.Command.MACROS_LIST.description(),
 )
 @discord_command.checks.has_any_role(*ROLES_USE_MACROS)
 async def list_macros(interaction: discord.Interaction):
