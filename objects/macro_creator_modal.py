@@ -34,7 +34,7 @@ class MacroModal(ui.Modal):
         label="Image URL (optional)", style=discord.TextStyle.short, required=False
     )
     macro_color = ui.TextInput(
-        label="Embed Color (optional, hex code)",
+        label="Embed Color (optional, hex code starting with #)",
         style=discord.TextStyle.short,
         required=False,
     )

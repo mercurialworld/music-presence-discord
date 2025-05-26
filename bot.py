@@ -448,9 +448,14 @@ macros_group = discord_command.Group(
 )
 @discord_command.checks.has_any_role(*ROLES_USE_MACROS)
 async def create(interaction: discord.Interaction, name: str):
-    await interaction.response.send_modal(
-        MacroCreate(macro_name=name, macros_db=bot_utils.macros_db)
-    )
+    if get_macro(bot_utils.macros_db, name) is None:
+        await interaction.response.send_modal(
+            MacroCreate(macro_name=name, macros_db=bot_utils.macros_db)
+        )
+    else:
+        await interaction.response.send_message(
+            f"Macro with name `{name}` already exists!", ephemeral=True
+        )
 
 
 @macros_group.command(
