@@ -437,6 +437,28 @@ async def command_tester_coverage(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 
+@tree.command(name=enums.Command.MACRO, description=enums.Command.MACRO.description())
+@discord_command.checks.has_any_role(*ROLES_USE_MACROS)
+async def macro(
+    interaction: discord.Interaction, name: str, mention: discord.Member | None
+):
+    macro = get_macro(bot_utils.macros_db, name)
+
+    if macro is not None:
+        message_mention = f"<@{mention.id}>" if mention is not None else None
+
+        await interaction.response.defer(thinking=False)
+        await interaction.delete_original_response()
+
+        await interaction.channel.send(
+            content=message_mention, embed=MacroEmbed(macro).show_embed()
+        )
+    else:
+        await interaction.response.send_message(
+            f"Macro with name `{name}` not found.", ephemeral=True
+        )
+
+
 macros_group = discord_command.Group(
     name=enums.Command.MACROS, description=enums.Command.MACROS.description()
 )
@@ -455,30 +477,6 @@ async def create(interaction: discord.Interaction, name: str):
     else:
         await interaction.response.send_message(
             f"Macro with name `{name}` already exists!", ephemeral=True
-        )
-
-
-@macros_group.command(
-    name=enums.Command.MACROS_SHOW, description=enums.Command.MACROS_SHOW.description()
-)
-@discord_command.checks.has_any_role(*ROLES_USE_MACROS)
-async def show(
-    interaction: discord.Interaction, name: str, mention: discord.Member | None
-):
-    macro = get_macro(bot_utils.macros_db, name)
-
-    if macro is not None:
-        message_mention = f"<@{mention.id}>" if mention is not None else None
-
-        await interaction.response.defer(thinking=False)
-        await interaction.delete_original_response()
-
-        await interaction.channel.send(
-            content=message_mention, embed=MacroEmbed(macro).show_embed()
-        )
-    else:
-        await interaction.response.send_message(
-            f"Macro with name `{name}` not found.", ephemeral=True
         )
 
 
@@ -529,7 +527,7 @@ async def remove(interaction: discord.Interaction, name: str):
 
 @edit.autocomplete("name")
 @remove.autocomplete("name")
-@show.autocomplete("name")
+@macro.autocomplete("name")
 async def macro_autocomplete(
     interaction: discord.Interaction, current: str
 ) -> list[discord_command.Choice[str]]:
