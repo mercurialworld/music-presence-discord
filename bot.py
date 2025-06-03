@@ -91,12 +91,26 @@ async def on_app_command_error(
 ):
     global tree
 
-    if interaction.command and interaction.command.name == enums.Command.JOINED:
-        if isinstance(error, discord_command.errors.TransformerError):
-            await interaction.response.send_message(
-                "❌ Could not find that member in the server.", ephemeral=True
-            )
-            return
+    command_name = None
+    if interaction.command is not None:
+        if interaction.command.parent is not None:
+            command_name = interaction.command.parent.name
+        elif interaction.command is not None:
+            command_name = interaction.command.name
+
+    if command_name is not None:
+        if command_name == enums.Command.JOINED:
+            if isinstance(error, discord_command.errors.TransformerError):
+                await interaction.response.send_message(
+                    "❌ Could not find that member in the server.", ephemeral=True
+                )
+                return
+        if command_name == enums.Command.MACRO or command_name == enums.Command.MACROS:
+            if isinstance(error, discord.app_commands.errors.MissingAnyRole):
+                await interaction.response.send_message(
+                    "❌ " + str(error), ephemeral=True
+                )
+                return
 
     # Fallback to the original error handler to log all uncaught errors
     original_error_handler = tree.on_error
