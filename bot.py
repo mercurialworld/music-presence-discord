@@ -455,7 +455,6 @@ async def command_tester_coverage(interaction: discord.Interaction):
     name=enums.Command.MACRO,
     description=enums.Command.MACRO.description(),
 )
-@discord_command.checks.has_any_role(*ROLES_USE_MACROS)
 async def macro(
     interaction: discord.Interaction, name: str, mention: discord.Member | None
 ):
@@ -486,7 +485,6 @@ macros_group = discord_command.Group(
     name=enums.Command.MACROS_CREATE,
     description=enums.Command.MACROS_CREATE.description(),
 )
-@discord_command.checks.has_any_role(*ROLES_USE_MACROS)
 async def create(interaction: discord.Interaction, name: str):
     if get_macro(bot_utils.macros_db, name) is None:
         await interaction.response.send_modal(
@@ -502,7 +500,6 @@ async def create(interaction: discord.Interaction, name: str):
     name=enums.Command.MACROS_EDIT,
     description=enums.Command.MACROS_EDIT.description(),
 )
-@discord_command.checks.has_any_role(*ROLES_USE_MACROS)
 async def edit(interaction: discord.Interaction, name: str):
     macro = get_macro(bot_utils.macros_db, name)
 
@@ -516,7 +513,6 @@ async def edit(interaction: discord.Interaction, name: str):
     name=enums.Command.MACROS_LIST,
     description=enums.Command.MACROS_LIST.description(),
 )
-@discord_command.checks.has_any_role(*ROLES_USE_MACROS)
 async def list_macros(interaction: discord.Interaction):
     macros = macros_list(bot_utils.macros_db)
     message_text = "There are no macros!"
@@ -533,7 +529,6 @@ async def list_macros(interaction: discord.Interaction):
     name=enums.Command.MACROS_DELETE,
     description=enums.Command.MACROS_DELETE.description(),
 )
-@discord_command.checks.has_any_role(*ROLES_USE_MACROS)
 async def remove(interaction: discord.Interaction, name: str):
     if delete_macro(bot_utils.macros_db, name) == 1:
         await interaction.response.send_message(
