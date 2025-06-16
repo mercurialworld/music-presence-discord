@@ -6,6 +6,9 @@ import pickledb
 import discord
 import dataclasses
 
+import thefuzz
+import thefuzz.process
+
 import enums
 import objects
 
@@ -311,3 +314,6 @@ class BotUtils:
     def update_macros_cache(self):
         macros = macros_list(self.macros_db)
         self.macros_cache = [macro.name for macro in macros] if macros else []
+
+    def search_macros(self, query: str):
+        return thefuzz.process.extract(query, self.macros_cache, limit=25)

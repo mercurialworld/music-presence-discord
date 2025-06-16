@@ -554,7 +554,7 @@ async def macro_autocomplete(
     else:
         return [
             discord_command.Choice(name=macro_name[0], value=macro_name[0])
-            for macro_name in macro_search(bot_utils.macros_db, current)
+            for macro_name in bot_utils.search_macros(current)
         ]
 
 
