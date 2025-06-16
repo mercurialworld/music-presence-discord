@@ -7,7 +7,7 @@ import discord
 import enums
 import objects
 from objects.macro_embed import MacroEmbed
-from objects.macro_creator_modal import MacroCreate, MacroEdit
+from objects.macro_create_modal import MacroCreate, MacroEdit
 import utils
 
 from time import time
@@ -458,21 +458,12 @@ async def macro(
     interaction: discord.Interaction,
     name: str,
     message: str | None,
-    mention: discord.Member | None,
 ):
     macro = get_macro(bot_utils.macros_db, name)
 
     if macro is not None:
-        id_mention = f"<@{mention.id}>" if mention else None
-
-        content = " ".join(
-            str(optional_param)
-            for optional_param in [id_mention, message]
-            if optional_param
-        )
-
         await interaction.response.send_message(
-            content=content, embed=MacroEmbed(macro).show_embed()
+            content=message, embed=MacroEmbed(macro).show_embed()
         )
     else:
         await interaction.response.send_message(
