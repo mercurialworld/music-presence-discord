@@ -6,7 +6,7 @@ from objects.macros import Macro
 class MacroEmbed:
     def __init__(self, macro: Macro):
         self.color = discord.Color.from_str(
-            macro.embed_color if macro.embed_color else "#34353B"
+            macro.embed_color if macro.embed_color else "#b3a089"
         )
         self.macro = macro
 
