@@ -4,4 +4,4 @@
 *.env
 .vscode/
 .idea/
-data
+data*
