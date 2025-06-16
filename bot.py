@@ -18,7 +18,6 @@ from enums.constants import (
     HELP_TROUBLESHOOTING_URLS,
     ROLE_BETA_TESTER,
     ROLES_OS,
-    ROLES_USE_MACROS,
 )
 from utils.init_database import load_macros_database, load_settings_database
 from utils.macros_database import (
@@ -456,18 +455,24 @@ async def command_tester_coverage(interaction: discord.Interaction):
     description=enums.Command.MACRO.description(),
 )
 async def macro(
-    interaction: discord.Interaction, name: str, mention: discord.Member | None
+    interaction: discord.Interaction,
+    name: str,
+    message: str | None,
+    mention: discord.Member | None,
 ):
     macro = get_macro(bot_utils.macros_db, name)
 
     if macro is not None:
-        message_mention = f"<@{mention.id}>" if mention is not None else None
+        id_mention = f"<@{mention.id}>" if mention else None
 
-        await interaction.response.defer(thinking=False)
-        await interaction.delete_original_response()
+        content = " ".join(
+            str(optional_param)
+            for optional_param in [id_mention, message]
+            if optional_param
+        )
 
-        await interaction.channel.send(
-            content=message_mention, embed=MacroEmbed(macro).show_embed()
+        await interaction.response.send_message(
+            content=content, embed=MacroEmbed(macro).show_embed()
         )
     else:
         await interaction.response.send_message(
