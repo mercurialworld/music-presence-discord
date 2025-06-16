@@ -18,7 +18,6 @@ from enums.constants import (
     HELP_TROUBLESHOOTING_URLS,
     ROLE_BETA_TESTER,
     ROLES_OS,
-    ROLES_USE_MACROS,
 )
 from utils.init_database import load_macros_database, load_settings_database
 from utils.macros_database import (
