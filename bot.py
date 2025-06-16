@@ -490,6 +490,7 @@ async def create(interaction: discord.Interaction, name: str):
         await interaction.response.send_message(
             f"Macro with name `{name}` already exists!", ephemeral=True
         )
+    bot_utils.update_macros_cache()
 
 
 @macros_group.command(
@@ -502,6 +503,7 @@ async def edit(interaction: discord.Interaction, name: str):
     await interaction.response.send_modal(
         MacroEdit(macro=macro, macros_db=bot_utils.macros_db)
     )
+    bot_utils.update_macros_cache()
 
 
 # Works for now, might be a problem in the future
@@ -513,7 +515,7 @@ async def list_macros(interaction: discord.Interaction):
     macros = macros_list(bot_utils.macros_db)
     message_text = "There are no macros!"
 
-    if macros is not None:
+    if macros:
         message_text = "# List of macros:\n"
         for macro in macros:
             message_text += f"- `{macro.name}` by {client.get_user(macro.creator).name} - last edited <t:{math.floor(macro.date_edited)}:f>\n"
@@ -530,6 +532,8 @@ async def remove(interaction: discord.Interaction, name: str):
         await interaction.response.send_message(
             f"Macro `{name}` removed", ephemeral=True
         )
+
+        bot_utils.update_macros_cache()
     else:
         await interaction.response.send_message(
             f"Macro `{name}` either not removed or doesn't exist", ephemeral=True
@@ -544,9 +548,9 @@ async def macro_autocomplete(
 ) -> list[discord_command.Choice[str]]:
     if current is None or current == "":
         return [
-            discord_command.Choice(name=macro_name[0], value=macro_name[0])
-            for macro_name in macro_names(bot_utils.macros_db)
-        ]
+            discord_command.Choice(name=macro_name, value=macro_name)
+            for macro_name in bot_utils.macros_cache
+        ][:25]
     else:
         return [
             discord_command.Choice(name=macro_name[0], value=macro_name[0])
