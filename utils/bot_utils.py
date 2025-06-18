@@ -6,6 +6,9 @@ import pickledb
 import discord
 import dataclasses
 
+import thefuzz
+import thefuzz.process
+
 import enums
 import objects
 
@@ -23,6 +26,7 @@ from enums.constants import (
     HELP_MESSAGE_LINES,
 )
 from utils.github_cached import latest_github_release_version
+from utils.macros_database import macros_list
 
 
 def rreplace(s: str, old: str, new: str, occurrence: int = 1):
@@ -43,6 +47,9 @@ class BotUtils:
         self.client = client
         self.settings = settings
         self.tree = tree
+        self.macros_cache = []
+
+        self.update_macros_cache()
 
     def get_role_listener(
         self, guild: discord.Guild, role: discord.Role
@@ -303,3 +310,10 @@ class BotUtils:
         if topic in HELP_MESSAGE_LINES:
             return "\n".join(HELP_MESSAGE_LINES[topic])
         return "No help message for this topic available"
+
+    def update_macros_cache(self):
+        macros = macros_list(self.macros_db)
+        self.macros_cache = [macro.name for macro in macros] if macros else []
+
+    def search_macros(self, query: str):
+        return thefuzz.process.extract(query, self.macros_cache, limit=25)

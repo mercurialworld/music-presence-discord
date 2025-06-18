@@ -33,13 +33,17 @@ class MacroModal(ui.Modal):
         label="Image URL (optional)", style=discord.TextStyle.short, required=False
     )
     macro_color = ui.TextInput(
-        label="Embed Color (optional, hex code with #)",
+        label="Embed Color (optional)",
+        placeholder="Must be a hex code (format #A1B2C3)",
         style=discord.TextStyle.short,
         required=False,
     )
 
     def __init__(
-        self, modal_title: str, macros_db: sqlite3.Connection, macro: Macro = None
+        self,
+        modal_title: str,
+        macros_db: sqlite3.Connection,
+        macro: Macro = None,
     ):
         super().__init__(title=modal_title)
         self.macros_db = macros_db

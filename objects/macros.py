@@ -23,7 +23,7 @@ class Macro:
         self.description = description
         self.creator = creator
         self.date_created = date_created
-        self.date_edited = date_created if date_edited is None else date_edited
+        self.date_edited = date_edited if date_edited else date_created
         self.image_url = image_url
         self.embed_color = embed_color
 

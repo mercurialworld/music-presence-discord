@@ -27,7 +27,7 @@ class Command(StrEnum):
             self.LOGS: "Tells you where the Music Presence logs are located",
             self.HELP: "Use this command if you need help with Music Presence",
             self.TESTER_COVERAGE: "Report the OS coverage among beta testers.",
-            self.MACRO: "Shows a macro, and optionally mentions someone.",
+            self.MACRO: "Shows a macro, and optionally adds a message.",
             self.MACROS: "Create, edit, and delete macros to be reused in troubleshooting.",
             self.MACROS_CREATE: "Creates a new macro.",
             self.MACROS_EDIT: "Edits an existing macro.",

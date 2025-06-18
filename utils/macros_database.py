@@ -60,28 +60,26 @@ def get_macro(conn: sqlite3.Connection, name: str) -> Macro | None:
     res = cur.execute("SELECT * FROM macros WHERE name=?", (name,))
 
     macro_tuple = res.fetchone()
-    return Macro(*macro_tuple) if macro_tuple is not None else None
+    return Macro(*macro_tuple) if macro_tuple else None
 
 
-def macro_names(conn: sqlite3.Connection) -> tuple | None:
+def macro_names(conn: sqlite3.Connection) -> list | None:
     cur = conn.cursor()
 
     res = cur.execute("SELECT name FROM macros ORDER BY date_edited DESC LIMIT 25")
     return res.fetchall()
 
 
-def macros_list(conn: sqlite3.Connection) -> tuple | None:
+def macros_list(conn: sqlite3.Connection) -> list | None:
     cur = conn.cursor()
 
     res = cur.execute("SELECT * FROM macros")
 
     macros = res.fetchall()
-    return (
-        [Macro(*macro_tuple) for macro_tuple in macros] if macros is not None else None
-    )
+    return [Macro(*macro_tuple) for macro_tuple in macros] if macros else None
 
 
-def macro_search(conn: sqlite3.Connection, name: str) -> tuple | None:
+def macro_search(conn: sqlite3.Connection, name: str) -> list | None:
     cur = conn.cursor()
 
     res = cur.execute(

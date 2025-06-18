@@ -7,7 +7,7 @@ import discord
 import enums
 import objects
 from objects.macro_embed import MacroEmbed
-from objects.macro_creator_modal import MacroCreate, MacroEdit
+from objects.macro_create_modal import MacroCreate, MacroEdit
 import utils
 
 from time import time
@@ -455,18 +455,15 @@ async def command_tester_coverage(interaction: discord.Interaction):
     description=enums.Command.MACRO.description(),
 )
 async def macro(
-    interaction: discord.Interaction, name: str, mention: discord.Member | None
+    interaction: discord.Interaction,
+    name: str,
+    message: str | None,
 ):
     macro = get_macro(bot_utils.macros_db, name)
 
     if macro is not None:
-        message_mention = f"<@{mention.id}>" if mention is not None else None
-
-        await interaction.response.defer(thinking=False)
-        await interaction.delete_original_response()
-
-        await interaction.channel.send(
-            content=message_mention, embed=MacroEmbed(macro).show_embed()
+        await interaction.response.send_message(
+            content=message, embed=MacroEmbed(macro).show_embed()
         )
     else:
         await interaction.response.send_message(
@@ -493,6 +490,7 @@ async def create(interaction: discord.Interaction, name: str):
         await interaction.response.send_message(
             f"Macro with name `{name}` already exists!", ephemeral=True
         )
+    bot_utils.update_macros_cache()
 
 
 @macros_group.command(
@@ -505,6 +503,7 @@ async def edit(interaction: discord.Interaction, name: str):
     await interaction.response.send_modal(
         MacroEdit(macro=macro, macros_db=bot_utils.macros_db)
     )
+    bot_utils.update_macros_cache()
 
 
 # Works for now, might be a problem in the future
@@ -516,7 +515,7 @@ async def list_macros(interaction: discord.Interaction):
     macros = macros_list(bot_utils.macros_db)
     message_text = "There are no macros!"
 
-    if macros is not None:
+    if macros:
         message_text = "# List of macros:\n"
         for macro in macros:
             message_text += f"- `{macro.name}` by {client.get_user(macro.creator).name} - last edited <t:{math.floor(macro.date_edited)}:f>\n"
@@ -533,6 +532,8 @@ async def remove(interaction: discord.Interaction, name: str):
         await interaction.response.send_message(
             f"Macro `{name}` removed", ephemeral=True
         )
+
+        bot_utils.update_macros_cache()
     else:
         await interaction.response.send_message(
             f"Macro `{name}` either not removed or doesn't exist", ephemeral=True
@@ -547,13 +548,13 @@ async def macro_autocomplete(
 ) -> list[discord_command.Choice[str]]:
     if current is None or current == "":
         return [
-            discord_command.Choice(name=macro_name[0], value=macro_name[0])
-            for macro_name in macro_names(bot_utils.macros_db)
-        ]
+            discord_command.Choice(name=macro_name, value=macro_name)
+            for macro_name in bot_utils.macros_cache
+        ][:25]
     else:
         return [
             discord_command.Choice(name=macro_name[0], value=macro_name[0])
-            for macro_name in macro_search(bot_utils.macros_db, current)
+            for macro_name in bot_utils.search_macros(current)
         ]
 
 
