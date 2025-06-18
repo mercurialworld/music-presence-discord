@@ -26,6 +26,7 @@ from enums.constants import (
     HELP_DOWNLOAD_URLS_FORMAT,
     HELP_MESSAGE_LINES,
 )
+from objects import MessageMatcher
 from utils.github_cached import latest_github_release_version
 from utils.macros_database import macros_list
 
@@ -326,7 +327,7 @@ class BotUtils:
 
     async def autolog(self, message: discord.Message):
         is_channel_observed = self.settings.lexists(enums.SettingsKeys.AUTOLOG, f"{message.guild.id}:{message.channel.id}")
-        if is_channel_observed and re.match(r"(send|share|show|need)[a-zA-Z0-9\s]{1,16}log", message.content):
+        if is_channel_observed and MessageMatcher().match_autolog(message.content):
             await message.reply(self.logs_response())
 
     def autolog_command(self, channel: discord.TextChannel|None, state: enums.AutologState) -> str|None:
@@ -337,16 +338,16 @@ class BotUtils:
             if state is enums.AutologState.ON:
                 if not is_channel_observed:
                     self.settings.ladd(enums.SettingsKeys.AUTOLOG, channel_value)
-                    return f"The channel {channel.name} is now observed."
+                    return f"The channel <#{channel.id}> is now observed."
                 if is_channel_observed:
-                    return f"The channel {channel.name} is already observed. Nothing to do."
+                    return f"The channel <#{channel.id}> is already observed. Nothing to do."
 
             if state is enums.AutologState.OFF:
                 if is_channel_observed:
                     self.settings.lremvalue(enums.SettingsKeys.AUTOLOG, channel_value)
-                    return f"The channel {channel.name} is no longer observed."
+                    return f"The channel <#{channel.id}> is no longer observed."
                 if not is_channel_observed:
-                    return f"The channel {channel.name} is currently unobserved. Nothing to do."
+                    return f"The channel <#{channel.id}> is currently unobserved. Nothing to do."
 
         if channel is None and state is enums.AutologState.OFF:
             if self.settings.exists(enums.SettingsKeys.AUTOLOG):
