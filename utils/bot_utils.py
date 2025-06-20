@@ -1,6 +1,7 @@
 import asyncio
 import json
 import sqlite3
+import re
 import aiohttp
 import pickledb
 import discord
@@ -25,6 +26,7 @@ from enums.constants import (
     HELP_DOWNLOAD_URLS_FORMAT,
     HELP_MESSAGE_LINES,
 )
+from objects import MessageMatcher
 from utils.github_cached import latest_github_release_version
 from utils.macros_database import macros_list
 
@@ -56,15 +58,15 @@ class BotUtils:
     ) -> discord.Role | None:
         role_id = str(role.id)
         guild_id = str(guild.id)
-        if self.settings.dexists("roles", guild_id):
-            guild_roles = self.settings.dget("roles", guild_id)
+        if self.settings.dexists(enums.SettingsKeys.ROLES, guild_id):
+            guild_roles = self.settings.dget(enums.SettingsKeys.ROLES, guild_id)
             if role_id in guild_roles:
                 listener_role_id = guild_roles[role_id]
                 listener_role = guild.get_role(listener_role_id)
                 if listener_role is None:
                     # the role seems to have been deleted
                     del guild_roles[role_id]
-                    self.settings.dadd("roles", (guild_id, guild_roles))
+                    self.settings.dadd(enums.SettingsKeys.ROLES, (guild_id, guild_roles))
 
                 return listener_role
 
@@ -73,8 +75,8 @@ class BotUtils:
     def get_roles_listeners_of_guild(self, guild: discord.Guild) -> list[discord.Role]:
         guild_id = str(guild.id)
         roles = []
-        if self.settings.dexists("roles", guild_id):
-            guild_roles = self.settings.dget("roles", guild_id)
+        if self.settings.dexists(enums.SettingsKeys.ROLES, guild_id):
+            guild_roles = self.settings.dget(enums.SettingsKeys.ROLES, guild_id)
 
             modified = False
             for role_id, listener_role_id in guild_roles.items():
@@ -87,7 +89,7 @@ class BotUtils:
                     roles.append(listener_role)
 
             if modified:
-                self.settings.dadd("roles", (guild_id, guild_roles))
+                self.settings.dadd(enums.SettingsKeys.ROLES, (guild_id, guild_roles))
 
         return roles
 
@@ -124,10 +126,10 @@ class BotUtils:
         if member.status in (discord.Status.invisible, discord.Status.offline):
             return await self.clear_role_listeners_of_member(member)
 
-        apps = self.settings.get("apps")
+        apps = self.settings.get(enums.SettingsKeys.APPS)
         user_apps = {}
-        if self.settings.dexists("user_apps", str(member.id)):
-            user_apps = self.settings.dget("user_apps", str(member.id))
+        if self.settings.dexists(enums.SettingsKeys.USER_APPS, str(member.id)):
+            user_apps = self.settings.dget(enums.SettingsKeys.USER_APPS, str(member.id))
 
         for activity in member.activities:
             if (
@@ -148,13 +150,13 @@ class BotUtils:
                         # Make sure it's not updated too frequently though
                         info.timestamp = now
                         user_apps[app_id_key] = dataclasses.asdict(info)
-                        self.settings.dadd("user_apps", (str(member.id), user_apps))
+                        self.settings.dadd(enums.SettingsKeys.USER_APPS, (str(member.id), user_apps))
                 return await self.give_role_listener(member)
 
         await self.clear_role_listeners_of_member(member)
 
     async def check_guild(self, guild: discord.Guild):
-        if self.settings.dexists("roles", str(guild.id)):
+        if self.settings.dexists(enums.SettingsKeys.ROLES, str(guild.id)):
             for member in guild.members:
                 await self.check_member(member)
 
@@ -170,8 +172,8 @@ class BotUtils:
         )
 
     async def purge_user_app_ids(self):
-        apps = self.settings.get("apps")
-        user_apps = self.settings.get("user_apps")
+        apps = self.settings.get(enums.SettingsKeys.APPS)
+        user_apps = self.settings.get(enums.SettingsKeys.USER_APPS)
         sanitized = {}
         for user_id, value in user_apps.items():
             result = {}
@@ -193,7 +195,7 @@ class BotUtils:
             if len(result) > 0:
                 sanitized[user_id] = result
 
-        self.settings.set("user_apps", sanitized)
+        self.settings.set(enums.SettingsKeys.USER_APPS, sanitized)
 
     async def update_apps(self):
         result = {str(MUSIC_APP_ID): True, str(PODCAST_APP_ID): True}
@@ -216,7 +218,7 @@ class BotUtils:
                     else:
                         print("player", player, "does not have a discord app id")
 
-        self.settings.set("apps", result)
+        self.settings.set(enums.SettingsKeys.APPS, result)
         print(f"Updated application IDs ({len(result)} entries)")
         await self.purge_user_app_ids()
 
@@ -228,11 +230,11 @@ class BotUtils:
             await asyncio.sleep(60 * 60 * 8)
 
     def get_role_overview(self, guild: discord.Guild) -> str | None:
-        if not self.settings.dexists("roles", str(guild.id)):
+        if not self.settings.dexists(enums.SettingsKeys.ROLES, str(guild.id)):
             return None
 
         inverse = defaultdict(list)
-        guild_roles = self.settings.dget("roles", str(guild.id))
+        guild_roles = self.settings.dget(enums.SettingsKeys.ROLES, str(guild.id))
         for for_role_id, listener_role_id in guild_roles.items():
             inverse[listener_role_id].append(for_role_id)
 
@@ -284,9 +286,9 @@ class BotUtils:
 
         return embed
 
-    async def logs_response(
-        self, interaction: discord.Interaction, platform: enums.Platform | None = None
-    ):
+    def logs_response(
+        self, platform: enums.Platform | None = None
+    ) -> str:
         lines = ["You can find the log file for Music Presence"]
         if platform is None:
             lines[0] += " here:"
@@ -297,7 +299,12 @@ class BotUtils:
             lines[0] += f" on {platform.value} here:"
             lines.append(f"`{platform.log_files_path()}`")
 
-        await interaction.response.send_message("\n".join(lines))
+        return "\n".join(lines)
+
+    async def logs_response_to_interaction(
+        self, interaction: discord.Interaction, platform: enums.Platform | None = None
+    ):
+        await interaction.response.send_message(self.logs_response(platform))
 
     async def get_download_urls(self) -> list[tuple[str, str]]:
         version = await latest_github_release_version()
@@ -317,3 +324,33 @@ class BotUtils:
 
     def search_macros(self, query: str):
         return thefuzz.process.extract(query, self.macros_cache, limit=25)
+
+    async def autolog(self, message: discord.Message):
+        is_channel_observed = self.settings.lexists(enums.SettingsKeys.AUTOLOG, f"{message.guild.id}:{message.channel.id}")
+        if is_channel_observed and MessageMatcher().match_autolog(message.content):
+            await message.reply(self.logs_response())
+
+    def autolog_command(self, channel: discord.TextChannel|None, state: enums.AutologState) -> str|None:
+        if channel is not None:
+            channel_value = f"{channel.guild.id}:{channel.id}"
+            is_channel_observed = self.settings.lexists(enums.SettingsKeys.AUTOLOG, channel_value)
+
+            if state is enums.AutologState.ON:
+                if not is_channel_observed:
+                    self.settings.ladd(enums.SettingsKeys.AUTOLOG, channel_value)
+                    return f"The channel <#{channel.id}> is now observed."
+                if is_channel_observed:
+                    return f"The channel <#{channel.id}> is already observed. Nothing to do."
+
+            if state is enums.AutologState.OFF:
+                if is_channel_observed:
+                    self.settings.lremvalue(enums.SettingsKeys.AUTOLOG, channel_value)
+                    return f"The channel <#{channel.id}> is no longer observed."
+                if not is_channel_observed:
+                    return f"The channel <#{channel.id}> is currently unobserved. Nothing to do."
+
+        if channel is None and state is enums.AutologState.OFF:
+            if self.settings.exists(enums.SettingsKeys.AUTOLOG):
+                self.settings.lremlist(enums.SettingsKeys.AUTOLOG)
+                self.settings.lcreate(enums.SettingsKeys.AUTOLOG)
+            return f"All channels were removed from observation."

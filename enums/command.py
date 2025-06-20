@@ -16,6 +16,7 @@ class Command(StrEnum):
     MACROS_EDIT = "edit"
     MACROS_LIST = "list"
     MACROS_DELETE = "delete"
+    AUTOLOG = "autolog"
 
     def description(self) -> str:
         return {
@@ -33,4 +34,5 @@ class Command(StrEnum):
             self.MACROS_EDIT: "Edits an existing macro.",
             self.MACROS_LIST: "Lists all created macros.",
             self.MACROS_DELETE: "Deletes a macro.",
+            self.AUTOLOG: "Automaticaly reply logs locations to a user asking for logs when his message match a regex.",
         }[self]

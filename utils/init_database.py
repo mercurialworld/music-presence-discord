@@ -1,12 +1,17 @@
 import pickledb
 import sqlite3
+import enums
 
 
 def load_settings_database(version: int = 0) -> pickledb.PickleDB:
     settings = pickledb.load(f"settings.{version}.db", True)
-    for key in ["apps", "user_apps", "roles"]:
+
+    for key in [enums.SettingsKeys.ROLES, enums.SettingsKeys.APPS, enums.SettingsKeys.USER_APPS]:
         if not settings.exists(key):
             settings.dcreate(key)
+
+    if not settings.exists(enums.SettingsKeys.AUTOLOG):
+        settings.lcreate(enums.SettingsKeys.AUTOLOG)
 
     return settings
 
