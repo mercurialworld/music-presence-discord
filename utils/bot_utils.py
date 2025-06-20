@@ -26,7 +26,7 @@ from enums.constants import (
     HELP_DOWNLOAD_URLS_FORMAT,
     HELP_MESSAGE_LINES,
 )
-from objects import MessageMatcher
+from objects import LogRequestMatcher
 from utils.github_cached import latest_github_release_version
 from utils.macros_database import macros_list
 
@@ -327,7 +327,7 @@ class BotUtils:
 
     async def autolog(self, message: discord.Message):
         is_channel_observed = self.settings.lexists(enums.SettingsKeys.AUTOLOG, f"{message.guild.id}:{message.channel.id}")
-        if is_channel_observed and MessageMatcher().match_autolog(message.content):
+        if is_channel_observed and LogRequestMatcher().test(message.content):
             await message.reply(self.logs_response())
 
     def autolog_command(self, channel: discord.TextChannel|None, state: enums.AutologState) -> str|None:

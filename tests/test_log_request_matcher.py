@@ -1,7 +1,7 @@
-from objects import MessageMatcher
+from objects import LogRequestMatcher
 
-def test_autolog_regexes():
-    matcher = MessageMatcher()
+def test_log_request_patterns():
+    matcher = LogRequestMatcher()
 
     should_match = [
         "Can you send your logs?",
@@ -17,7 +17,7 @@ def test_autolog_regexes():
         "Where can I find the application logs?",
     ]
     for message in should_match:
-        assert matcher.match_autolog(message) == True
+        assert matcher.test(message) == True
 
     should_not_match = [
         "send your logarithm calculation",
@@ -26,4 +26,4 @@ def test_autolog_regexes():
         "show me your blog!",
     ]
     for message in should_not_match:
-        assert matcher.match_autolog(message) == False
+        assert matcher.test(message) == False
