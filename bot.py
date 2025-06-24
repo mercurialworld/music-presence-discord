@@ -13,6 +13,7 @@ import utils
 from time import time
 from typing import Optional
 from discord import app_commands as discord_command
+from reactionmenu import ViewMenu, ViewButton
 
 from enums.constants import (
     HELP_TROUBLESHOOTING_URLS,
@@ -517,14 +518,30 @@ async def edit(interaction: discord.Interaction, name: str):
 )
 async def list_macros(interaction: discord.Interaction):
     macros = macros_list(bot_utils.macros_db)
-    message_text = "There are no macros!"
+    menu = ViewMenu(
+        interaction,
+        menu_type=ViewMenu.TypeEmbedDynamic,
+        rows_requested=10,
+        custom_embed=discord.Embed(
+            color=discord.Color.from_str("#b3a089"), title="Available Macros"
+        ),
+        timeout=300,  # 5 minutes
+    )
 
     if macros:
-        message_text = "# List of macros:\n"
         for macro in macros:
-            message_text += f"- `{macro.name}` by {client.get_user(macro.creator).name} - last edited <t:{math.floor(macro.date_edited)}:f>\n"
+            menu.add_row(
+                f"`{macro.name}` by <@{macro.creator}> - last edited <t:{math.floor(macro.date_edited)}:f>"
+            )
 
-    await interaction.response.send_message(message_text, ephemeral=True)
+        menu.add_button(ViewButton.go_to_first_page())
+        menu.add_button(ViewButton.back())
+        menu.add_button(ViewButton.next())
+        menu.add_button(ViewButton.go_to_last_page())
+
+        await menu.start()
+    else:
+        await interaction.response.send_message("There are no macros!", ephemeral=True)
 
 
 @macros_group.command(
