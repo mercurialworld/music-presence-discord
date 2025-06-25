@@ -7,9 +7,6 @@ import pickledb
 import discord
 import dataclasses
 
-import thefuzz
-import thefuzz.process
-
 import enums
 import objects
 
@@ -66,7 +63,9 @@ class BotUtils:
                 if listener_role is None:
                     # the role seems to have been deleted
                     del guild_roles[role_id]
-                    self.settings.dadd(enums.SettingsKeys.ROLES, (guild_id, guild_roles))
+                    self.settings.dadd(
+                        enums.SettingsKeys.ROLES, (guild_id, guild_roles)
+                    )
 
                 return listener_role
 
@@ -150,7 +149,9 @@ class BotUtils:
                         # Make sure it's not updated too frequently though
                         info.timestamp = now
                         user_apps[app_id_key] = dataclasses.asdict(info)
-                        self.settings.dadd(enums.SettingsKeys.USER_APPS, (str(member.id), user_apps))
+                        self.settings.dadd(
+                            enums.SettingsKeys.USER_APPS, (str(member.id), user_apps)
+                        )
                 return await self.give_role_listener(member)
 
         await self.clear_role_listeners_of_member(member)
@@ -286,9 +287,7 @@ class BotUtils:
 
         return embed
 
-    def logs_response(
-        self, platform: enums.Platform | None = None
-    ) -> str:
+    def logs_response(self, platform: enums.Platform | None = None) -> str:
         lines = ["You can find the log file for Music Presence"]
         if platform is None:
             lines[0] += " here:"
@@ -323,17 +322,23 @@ class BotUtils:
         self.macros_cache = [macro.name for macro in macros] if macros else []
 
     def search_macros(self, query: str):
-        return thefuzz.process.extract(query, self.macros_cache, limit=25)
+        return [macro_name for macro_name in self.macros_cache if query in macro_name]
 
     async def autolog(self, message: discord.Message):
-        is_channel_observed = self.settings.lexists(enums.SettingsKeys.AUTOLOG, f"{message.guild.id}:{message.channel.id}")
+        is_channel_observed = self.settings.lexists(
+            enums.SettingsKeys.AUTOLOG, f"{message.guild.id}:{message.channel.id}"
+        )
         if is_channel_observed and LogRequestMatcher().test(message.content):
             await message.reply(self.logs_response())
 
-    def autolog_command(self, channel: discord.TextChannel|None, state: enums.AutologState) -> str|None:
+    def autolog_command(
+        self, channel: discord.TextChannel | None, state: enums.AutologState
+    ) -> str | None:
         if channel is not None:
             channel_value = f"{channel.guild.id}:{channel.id}"
-            is_channel_observed = self.settings.lexists(enums.SettingsKeys.AUTOLOG, channel_value)
+            is_channel_observed = self.settings.lexists(
+                enums.SettingsKeys.AUTOLOG, channel_value
+            )
 
             if state is enums.AutologState.ON:
                 if not is_channel_observed:
