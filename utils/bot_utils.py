@@ -322,7 +322,11 @@ class BotUtils:
         self.macros_cache = [macro.name for macro in macros] if macros else []
 
     def search_macros(self, query: str):
-        return [macro_name for macro_name in self.macros_cache if query in macro_name]
+        return [
+            macro_name
+            for macro_name in self.macros_cache
+            if query.lower() in str(macro_name).lower()
+        ]
 
     async def autolog(self, message: discord.Message):
         is_channel_observed = self.settings.lexists(
