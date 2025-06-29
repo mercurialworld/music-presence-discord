@@ -63,27 +63,10 @@ def get_macro(conn: sqlite3.Connection, name: str) -> Macro | None:
     return Macro(*macro_tuple) if macro_tuple else None
 
 
-def macro_names(conn: sqlite3.Connection) -> list | None:
-    cur = conn.cursor()
-
-    res = cur.execute("SELECT name FROM macros ORDER BY date_edited DESC LIMIT 25")
-    return res.fetchall()
-
-
 def macros_list(conn: sqlite3.Connection) -> list | None:
     cur = conn.cursor()
 
-    res = cur.execute("SELECT * FROM macros")
+    res = cur.execute("SELECT * FROM macros ORDER BY date_edited DESC")
 
     macros = res.fetchall()
     return [Macro(*macro_tuple) for macro_tuple in macros] if macros else None
-
-
-def macro_search(conn: sqlite3.Connection, name: str) -> list | None:
-    cur = conn.cursor()
-
-    res = cur.execute(
-        "SELECT name FROM macros WHERE name LIKE ? ORDER BY date_edited DESC LIMIT 25",
-        (f"%{name}%",),
-    )
-    return res.fetchall()

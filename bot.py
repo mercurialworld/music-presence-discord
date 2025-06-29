@@ -13,6 +13,7 @@ import utils
 from time import time
 from typing import Optional
 from discord import app_commands as discord_command
+from reactionmenu import ViewMenu, ViewButton
 
 from enums.constants import (
     HELP_TROUBLESHOOTING_URLS,
@@ -23,8 +24,6 @@ from utils.init_database import load_macros_database, load_settings_database
 from utils.macros_database import (
     delete_macro,
     get_macro,
-    macro_names,
-    macro_search,
     macros_list,
 )
 
@@ -81,6 +80,7 @@ async def on_guild_remove(guild: discord.Guild):
 @client.event
 async def on_presence_update(_: discord.Member, member: discord.Member):
     await bot_utils.check_member(member)
+
 
 @client.event
 async def on_message(message: discord.Message):
@@ -301,7 +301,9 @@ async def command_joined_stats(
     await interaction.response.send_message(embed=embed)
 
 
-@tree.command(name=enums.Command.LISTENING, description=enums.Command.LISTENING.description())
+@tree.command(
+    name=enums.Command.LISTENING, description=enums.Command.LISTENING.description()
+)
 async def command_listening_role(
     interaction: discord.Interaction, delete: Optional[bool]
 ):
@@ -387,7 +389,9 @@ async def command_stop(interaction: discord.Interaction):
 async def command_logs(
     interaction: discord.Interaction, os: discord_command.Choice[str] = None
 ):
-    await bot_utils.logs_response_to_interaction(interaction, os.value if os is not None else None)
+    await bot_utils.logs_response_to_interaction(
+        interaction, os.value if os is not None else None
+    )
 
 
 @tree.command(name=enums.Command.HELP, description=enums.Command.HELP.description())
@@ -427,7 +431,10 @@ async def command_help(
     )
 
 
-@tree.command(name=enums.Command.TESTER_COVERAGE, description=enums.Command.TESTER_COVERAGE.description())
+@tree.command(
+    name=enums.Command.TESTER_COVERAGE,
+    description=enums.Command.TESTER_COVERAGE.description(),
+)
 async def command_tester_coverage(interaction: discord.Interaction):
     guild = interaction.guild
     beta_tester_role = guild.get_role(ROLE_BETA_TESTER)
@@ -510,21 +517,36 @@ async def edit(interaction: discord.Interaction, name: str):
     bot_utils.update_macros_cache()
 
 
-# Works for now, might be a problem in the future
 @macros_group.command(
     name=enums.Command.MACROS_LIST,
     description=enums.Command.MACROS_LIST.description(),
 )
 async def list_macros(interaction: discord.Interaction):
     macros = macros_list(bot_utils.macros_db)
-    message_text = "There are no macros!"
+    menu = ViewMenu(
+        interaction,
+        menu_type=ViewMenu.TypeEmbedDynamic,
+        rows_requested=10,
+        custom_embed=discord.Embed(
+            color=discord.Color.from_str("#b3a089"), title="Available Macros"
+        ),
+        timeout=300,  # 5 minutes
+    )
 
     if macros:
-        message_text = "# List of macros:\n"
         for macro in macros:
-            message_text += f"- `{macro.name}` by {client.get_user(macro.creator).name} - last edited <t:{math.floor(macro.date_edited)}:f>\n"
+            menu.add_row(
+                f"`{macro.name}` by <@{macro.creator}> - last edited <t:{math.floor(macro.date_edited)}:f>"
+            )
 
-    await interaction.response.send_message(message_text, ephemeral=True)
+        menu.add_button(ViewButton.go_to_first_page())
+        menu.add_button(ViewButton.back())
+        menu.add_button(ViewButton.next())
+        menu.add_button(ViewButton.go_to_last_page())
+
+        await menu.start()
+    else:
+        await interaction.response.send_message("There are no macros!", ephemeral=True)
 
 
 @macros_group.command(
@@ -548,7 +570,7 @@ async def remove(interaction: discord.Interaction, name: str):
 @remove.autocomplete("name")
 @macro.autocomplete("name")
 async def macro_autocomplete(
-    interaction: discord.Interaction, current: str
+    _: discord.Interaction, current: str
 ) -> list[discord_command.Choice[str]]:
     if current is None or current == "":
         return [
@@ -557,7 +579,7 @@ async def macro_autocomplete(
         ][:25]
     else:
         return [
-            discord_command.Choice(name=macro_name[0], value=macro_name[0])
+            discord_command.Choice(name=macro_name, value=macro_name)
             for macro_name in bot_utils.search_macros(current)
         ]
 
@@ -565,21 +587,27 @@ async def macro_autocomplete(
 tree.add_command(macros_group)
 
 
-@tree.command(name=enums.Command.AUTOLOG, description=enums.Command.AUTOLOG.description())
+@tree.command(
+    name=enums.Command.AUTOLOG, description=enums.Command.AUTOLOG.description()
+)
 @discord_command.choices(
     state=[
         discord_command.Choice(name=enums.AutologState.ON, value=enums.AutologState.ON),
-        discord_command.Choice(name=enums.AutologState.OFF, value=enums.AutologState.OFF),
+        discord_command.Choice(
+            name=enums.AutologState.OFF, value=enums.AutologState.OFF
+        ),
     ]
 )
 async def command_autolog(
-        interaction: discord.Interaction,
-        channel: Optional[discord.TextChannel],
-        state: Optional[discord_command.Choice[str]]
+    interaction: discord.Interaction,
+    channel: Optional[discord.TextChannel],
+    state: Optional[discord_command.Choice[str]],
 ):
     global settings
 
-    state = enums.AutologState(state.value) if state is not None else enums.AutologState.ON
+    state = (
+        enums.AutologState(state.value) if state is not None else enums.AutologState.ON
+    )
 
     reply_message = bot_utils.autolog_command(channel, state)
     if reply_message is not None:

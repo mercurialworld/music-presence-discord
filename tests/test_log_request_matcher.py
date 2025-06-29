@@ -1,5 +1,6 @@
 from objects import LogRequestMatcher
 
+
 def test_log_request_patterns():
     matcher = LogRequestMatcher()
 
