@@ -347,7 +347,7 @@ async def command_date_role(
             ephemeral=True,
         )
 
-    sem = Semaphore(5)
+    sem = Semaphore(1)
 
     async def try_add_role(member):
         async with sem:
