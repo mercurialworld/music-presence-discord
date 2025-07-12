@@ -103,8 +103,7 @@ async def on_app_command_error(
     command_name = (
         interaction.command.parent.name
         if interaction.command and interaction.command.parent
-        else interaction.command.name if interaction.command
-        else None
+        else interaction.command.name if interaction.command else None
     )
 
     if command_name == enums.Command.JOINED:
@@ -116,9 +115,7 @@ async def on_app_command_error(
 
     if command_name in (enums.Command.MACRO, enums.Command.MACROS):
         if isinstance(error, discord.app_commands.errors.MissingAnyRole):
-            await interaction.response.send_message(
-                f"❌ {error}", ephemeral=True
-            )
+            await interaction.response.send_message(f"❌ {error}", ephemeral=True)
             return
 
     print("Unhandled command error:", error)
@@ -318,8 +315,13 @@ async def command_joined_stats(
 
     await interaction.response.send_message(embed=embed)
 
-@tree.command(name=enums.Command.DATEROLE, description=enums.Command.DATEROLE.description())
-@discord_command.describe(from_date="ISO format date (YYYY-MM-DD or YYYY-MM-DDTHH:MM)", role="Role to assign")
+
+@tree.command(
+    name=enums.Command.DATEROLE, description=enums.Command.DATEROLE.description()
+)
+@discord_command.describe(
+    from_date="ISO format date (YYYY-MM-DD or YYYY-MM-DDTHH:MM)", role="Role to assign"
+)
 async def command_date_role(
     interaction: discord.Interaction, from_date: str, role: discord.Role
 ):
@@ -360,7 +362,9 @@ async def command_date_role(
     tasks = [
         try_add_role(member)
         for member in interaction.guild.members
-        if not member.bot and member.joined_at and member.joined_at.astimezone(timezone.utc) >= parsed
+        if not member.bot
+        and member.joined_at
+        and member.joined_at.astimezone(timezone.utc) >= parsed
     ]
 
     results = await gather(*tasks)
@@ -371,7 +375,8 @@ async def command_date_role(
         allowed_mentions=discord.AllowedMentions(roles=False),
         ephemeral=True,
     )
-    
+
+
 @tree.command(
     name=enums.Command.LISTENING, description=enums.Command.LISTENING.description()
 )
