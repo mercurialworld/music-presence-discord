@@ -3,12 +3,18 @@ import os
 import dotenv
 import dataclasses
 import discord
+import traceback
+import asyncio
 
 import enums
 import objects
 from objects.macro_embed import MacroEmbed
 from objects.macro_create_modal import MacroCreate, MacroEdit
 import utils
+
+from dateutil.parser import isoparse
+from datetime import timezone
+from asyncio import Semaphore, gather
 
 from time import time
 from typing import Optional
@@ -90,37 +96,49 @@ async def on_message(message: discord.Message):
     await bot_utils.autolog(message)
 
 
-# Annoyingly required catch when member cannot be found by Discord else we get interaction timeout & ugly error
 @tree.error
 async def on_app_command_error(
-    interaction: discord.Interaction, error: discord_command.AppCommandError
+    interaction: discord.Interaction, error: discord.app_commands.AppCommandError
 ):
-    global tree
+    command_name = (
+        interaction.command.parent.name
+        if interaction.command and interaction.command.parent
+        else interaction.command.name if interaction.command
+        else None
+    )
 
-    command_name = None
-    if interaction.command is not None:
-        if interaction.command.parent is not None:
-            command_name = interaction.command.parent.name
-        elif interaction.command is not None:
-            command_name = interaction.command.name
+    if command_name == enums.Command.JOINED:
+        if isinstance(error, discord.app_commands.errors.TransformerError):
+            await interaction.response.send_message(
+                "❌ Could not find that member in the server.", ephemeral=True
+            )
+            return
 
-    if command_name is not None:
-        if command_name == enums.Command.JOINED:
-            if isinstance(error, discord_command.errors.TransformerError):
-                await interaction.response.send_message(
-                    "❌ Could not find that member in the server.", ephemeral=True
-                )
-                return
-        if command_name == enums.Command.MACRO or command_name == enums.Command.MACROS:
-            if isinstance(error, discord.app_commands.errors.MissingAnyRole):
-                await interaction.response.send_message(
-                    "❌ " + str(error), ephemeral=True
-                )
-                return
+    if command_name in (enums.Command.MACRO, enums.Command.MACROS):
+        if isinstance(error, discord.app_commands.errors.MissingAnyRole):
+            await interaction.response.send_message(
+                f"❌ {error}", ephemeral=True
+            )
+            return
 
-    # Fallback to the original error handler to log all uncaught errors
-    original_error_handler = tree.on_error
-    await original_error_handler(interaction, error)
+    print("Unhandled command error:", error)
+    traceback.print_exc()
+
+    try:
+        await interaction.response.send_message(
+            "An unexpected error occurred while executing this command.",
+            ephemeral=True,
+        )
+    except discord.NotFound:
+        pass
+    except discord.InteractionResponded:
+        try:
+            await interaction.followup.send(
+                "An unexpected error occurred while executing this command.",
+                ephemeral=True,
+            )
+        except Exception:
+            pass
 
 
 # Technically we should observe updates to roles
@@ -300,7 +318,60 @@ async def command_joined_stats(
 
     await interaction.response.send_message(embed=embed)
 
+@tree.command(name=enums.Command.DATEROLE, description=enums.Command.DATEROLE.description())
+@discord_command.describe(from_date="ISO format date (YYYY-MM-DD or YYYY-MM-DDTHH:MM)", role="Role to assign")
+async def command_date_role(
+    interaction: discord.Interaction, from_date: str, role: discord.Role
+):
+    """
+    Assign a role to all members who joined after the given ISO date.
+    """
+    await interaction.response.defer(thinking=True, ephemeral=True)
 
+    try:
+        parsed = isoparse(from_date)
+    except ValueError:
+        return await interaction.followup.send(
+            "❌ Invalid date format. Use ISO 8601 like `2025-07-01` or `2025-07-01T15:30`.",
+            ephemeral=True,
+        )
+
+    parsed = parsed.astimezone(timezone.utc)
+
+    bot_member = interaction.guild.me
+    if role >= bot_member.top_role:
+        return await interaction.followup.send(
+            f"❌ Cannot assign {role.mention}. The role is higher than the bot's top role.",
+            ephemeral=True,
+        )
+
+    sem = Semaphore(5)
+
+    async def try_add_role(member):
+        async with sem:
+            if role not in member.roles:
+                try:
+                    await member.add_roles(role)
+                    return True
+                except discord.Forbidden:
+                    return None
+            return False
+
+    tasks = [
+        try_add_role(member)
+        for member in interaction.guild.members
+        if not member.bot and member.joined_at and member.joined_at.astimezone(timezone.utc) >= parsed
+    ]
+
+    results = await gather(*tasks)
+    count = sum(1 for result in results if result)
+
+    await interaction.followup.send(
+        f"✅ Gave {role.mention} to {count} member{'s' if count != 1 else ''} who joined after <t:{int(parsed.timestamp())}:f>",
+        allowed_mentions=discord.AllowedMentions(roles=False),
+        ephemeral=True,
+    )
+    
 @tree.command(
     name=enums.Command.LISTENING, description=enums.Command.LISTENING.description()
 )

@@ -17,6 +17,7 @@ class Command(StrEnum):
     MACROS_LIST = "list"
     MACROS_DELETE = "delete"
     AUTOLOG = "autolog"
+    DATEROLE = "daterole"
 
     def description(self) -> str:
         return {
@@ -35,4 +36,5 @@ class Command(StrEnum):
             self.MACROS_LIST: "Lists all created macros.",
             self.MACROS_DELETE: "Deletes a macro.",
             self.AUTOLOG: "Automaticaly reply logs locations to a user asking for logs when his message match a regex.",
+            self.DATEROLE: "Assign a role to all members who joined after a specific date.",
         }[self]
