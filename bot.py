@@ -743,11 +743,11 @@ async def foo_roll(interaction: discord.Interaction):
             "Add users to the pool first", ephemeral=True
         )
         return
-    await interaction.response.send_message("Let's see who the winner is. ")
+    await interaction.response.send_message("Let's see who the winner is!")
     await asyncio.sleep(1)
     await interaction.channel.send("Where are my glasses?")
     await asyncio.sleep(2)
-    await interaction.channel.send("Okay, I got it!")
+    await interaction.channel.send("Okay, I got them! Rolling the dice...")
     await asyncio.sleep(0.75)
     chosen_user = secrets.choice(giveaway_pool)
     await interaction.channel.send(
