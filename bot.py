@@ -5,6 +5,7 @@ import dataclasses
 import discord
 import traceback
 import asyncio
+import secrets
 
 import enums
 import objects
@@ -691,5 +692,76 @@ async def command_autolog(
     if reply_message is None:
         await interaction.response.send_message(f"Nothing to do.")
 
+
+user_pool = []
+
+giveaway_group = discord_command.Group(name="giveaway", description="Giveaway commands")
+
+
+@giveaway_group.command(name="add", description="Add users from CSV (user ID, entries)")
+@discord_command.describe(csv_data="CSV (user ID, entries) without headers")
+async def foo_add(interaction: discord.Interaction, csv_data: str):
+    global giveaway_pool
+    added = 0
+    try:
+        parts = [[x.strip() for x in p.split(",")] for p in csv_data.split(";")]
+        new_pool = []
+        for row in parts:
+            if len(row) == 0:
+                continue
+            if len(row) != 2:
+                raise ValueError(f"Invalid row: {str(row)}")
+            user_id, count = row
+            try:
+                user_id = int(user_id.strip())
+                count = int(count.strip())
+                member = interaction.guild.get_member(user_id)
+                if not member:
+                    raise ValueError(
+                        f"User with ID {user_id} is not a member of this server"
+                    )
+                new_pool.extend([user_id] * count)
+                added += 1
+            except ValueError as e:
+                await interaction.response.send_message(f"Error: {e}")
+                return
+        giveaway_pool = new_pool
+        await interaction.response.send_message(
+            f"Added {added} users to the pool with a total of {len(giveaway_pool)} entries"
+        )
+    except Exception as e:
+        await interaction.response.send_message(
+            f"Error: Failed to parse CSV: {str(e)}", ephemeral=True
+        )
+
+
+@giveaway_group.command(name="roll", description="Roll a random winner")
+async def foo_roll(interaction: discord.Interaction):
+    global giveaway_pool
+    if not giveaway_pool:
+        await interaction.response.send_message(
+            "Add users to the pool first", ephemeral=True
+        )
+        return
+    await interaction.response.send_message("Let's see who the winner is. ")
+    await asyncio.sleep(1)
+    await interaction.channel.send("Where are my glasses?")
+    await asyncio.sleep(2)
+    await interaction.channel.send("Okay, I got it!")
+    await asyncio.sleep(0.75)
+    chosen_user = secrets.choice(giveaway_pool)
+    await interaction.channel.send(
+        f"Congratulations <@{chosen_user}>! You won the giveaway!"
+    )
+
+
+@giveaway_group.command(name="clear", description="Clear the giveaway pool")
+async def foo_clear(interaction: discord.Interaction):
+    global giveaway_pool
+    giveaway_pool.clear()
+    await interaction.response.send_message("Giveaway pool cleared")
+
+
+tree.add_command(giveaway_group)
 
 client.run(os.getenv("BOT_TOKEN"))
