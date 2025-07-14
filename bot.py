@@ -700,8 +700,9 @@ giveaway_group = discord_command.Group(name="giveaway", description="Giveaway co
 
 @giveaway_group.command(name="add", description="Add users from CSV (user ID, entries)")
 @discord_command.describe(csv_data="CSV (user ID, entries) without headers")
-async def foo_add(interaction: discord.Interaction, csv_data: str):
+async def command_giveaway_add(interaction: discord.Interaction, csv_data: str):
     global giveaway_pool
+    giveaway_pool.clear()
     added = 0
     try:
         parts = [[x.strip() for x in p.split(",")] for p in csv_data.split(";")]
@@ -736,7 +737,7 @@ async def foo_add(interaction: discord.Interaction, csv_data: str):
 
 
 @giveaway_group.command(name="roll", description="Roll a random winner")
-async def foo_roll(interaction: discord.Interaction):
+async def command_giveaway_roll(interaction: discord.Interaction):
     global giveaway_pool
     if not giveaway_pool:
         await interaction.response.send_message(
@@ -756,7 +757,7 @@ async def foo_roll(interaction: discord.Interaction):
 
 
 @giveaway_group.command(name="clear", description="Clear the giveaway pool")
-async def foo_clear(interaction: discord.Interaction):
+async def command_giveaway_clear(interaction: discord.Interaction):
     global giveaway_pool
     giveaway_pool.clear()
     await interaction.response.send_message("Giveaway pool cleared")
