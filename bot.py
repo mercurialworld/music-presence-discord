@@ -693,7 +693,7 @@ async def command_autolog(
         await interaction.response.send_message(f"Nothing to do.")
 
 
-user_pool = []
+giveaway_pool = []
 
 giveaway_group = discord_command.Group(name="giveaway", description="Giveaway commands")
 
