@@ -451,12 +451,12 @@ class BotUtils:
                 emoji = data.get("emoji", "")
                 url = data.get("url")
 
-            roles = [
-                guild.get_role(int(rid))
+            role_ids = [
+                int(rid)
                 for rid, plat in role_map.items()
                 if plat == name and guild.get_role(int(rid)) is not None
             ]
-            role_mentions = ", ".join(f"<@&{r.id}>" for r in roles) if roles else ""
+            role_mentions = ", ".join(f"<@&{rid}>" for rid in role_ids) if role_ids else ""
 
             line = f"- {emoji} `{name}`"
             if url:
