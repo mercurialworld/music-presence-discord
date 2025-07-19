@@ -331,7 +331,7 @@ async def command_info(interaction: discord.Interaction, member: discord.Member 
         member_index = members_by_join_date.index(target_member)
     except ValueError:
         await interaction.response.send_message(
-            f"❌ Could not find {'yourself' if member is None else target_member.display_name} in the member list.",
+            f"❌ Could not find {'you' if member is None else target_member.display_name} in the member list.",
             ephemeral=True,
         )
         return
