@@ -399,35 +399,6 @@ class BotUtils:
             "type": status,
             "platforms": platform_entries
         }
-
-        if self.settings.dexists(
-            enums.SettingsKeys.SPONSOR_PLATFORM_ROLES, guild_id
-        ):
-            role_map = self.settings.dget(
-                enums.SettingsKeys.SPONSOR_PLATFORM_ROLES, guild_id
-            )
-            for role_id_str, name in role_map.items():
-                role = member.guild.get_role(int(role_id_str))
-                if role and role in member.roles:
-                    platform_name = name
-                    break
-
-        if (
-            platform_name
-            and self.settings.dexists(
-                enums.SettingsKeys.SPONSOR_PLATFORMS, guild_id
-            )
-        ):
-            platforms = self.settings.dget(
-                enums.SettingsKeys.SPONSOR_PLATFORMS, guild_id
-            )
-            platform_emoji = platforms.get(platform_name)
-
-        return {
-            "type": status,
-            "platform": platform_name,
-            "emoji": platform_emoji,
-        }
     def get_platform_overview(self, guild: discord.Guild) -> str | None:
         guild_id = str(guild.id)
 
