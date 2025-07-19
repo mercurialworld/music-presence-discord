@@ -945,16 +945,16 @@ async def sponsor_info(
         "Monthly" if status["type"] == "subscription" else "One Time"
     )
     platforms_display = ", ".join(
-    (f"{p['emoji']} [{p['name']}]({p['url']})" if p.get("url") else f"{p['emoji']} {p['name']}")
-    for p in status["platforms"]
+        (f"{p['emoji']} [{p['name']}]({p['url']})" if p.get("url") else f"{p['emoji']} {p['name']}")
+        for p in status["platforms"]
     )
 
     await interaction.response.send_message(
         f"{target.mention}: {sponsor_type} sponsor ({platforms_display})",
         ephemeral=True,
         allowed_mentions=discord.AllowedMentions(users=False),
+        suppress_embeds=True,
     )
-        
 @sponsor_group.command(
     name=enums.Command.SPONSOR_LIST,
     description=enums.Command.SPONSOR_LIST.description(),
