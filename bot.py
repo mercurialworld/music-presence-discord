@@ -380,10 +380,17 @@ async def command_info(interaction: discord.Interaction, member: discord.Member 
         platforms_value = "None"
     embed.add_field(name="Platform(s)", value=platforms_value, inline=True)
 
-    # --- Beta Tester Info ---
-    beta_tester_role = guild.get_role(ROLE_BETA_TESTER)
-    is_beta = beta_tester_role and beta_tester_role in target_member.roles
-    embed.add_field(name="Beta Tester", value="✅ Yes" if is_beta else "❌ No", inline=True)
+    # --- Special Roles ---
+    special_roles = [
+        guild.premium_subscriber_role,
+        guild.get_role(ROLE_BETA_TESTER),
+        guild.get_role(enums.constants.ROLE_TRANSLATOR),
+        guild.get_role(enums.constants.ROLE_CONTRIBUTOR),
+    ]
+
+    assigned_specials = [role.mention for role in special_roles if role and role in target_member.roles]
+    if assigned_specials:
+        embed.add_field(name="Special Roles", value=", ".join(assigned_specials), inline=True)
 
     if target_member.display_avatar:
         embed.set_thumbnail(url=target_member.display_avatar.url)
