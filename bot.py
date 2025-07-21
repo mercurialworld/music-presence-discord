@@ -779,6 +779,7 @@ async def sponsor_platform_add(
         + (f" ([Link]({url}))" if url else ""),
         ephemeral=True,
         allowed_mentions=discord.AllowedMentions(roles=False),
+        suppress_embeds=True,
     )
 
 
@@ -831,6 +832,7 @@ async def sponsor_platform_edit(
         f"Platform `{name}` updated",
         ephemeral=True,
         allowed_mentions=discord.AllowedMentions(roles=False),
+        suppress_embeds=True,
     )
 
 
@@ -883,6 +885,7 @@ async def sponsor_platform_list(interaction: discord.Interaction):
         overview,
         ephemeral=True,
         allowed_mentions=discord.AllowedMentions(roles=False),
+        suppress_embeds=True,
     )
 @sponsor_platform_edit.autocomplete("name")
 @sponsor_platform_delete.autocomplete("name")
@@ -922,6 +925,7 @@ async def sponsor_subroles(
     await interaction.response.send_message(
         "Sponsor roles updated", ephemeral=True,
         allowed_mentions=discord.AllowedMentions(roles=False),
+        suppress_embeds=True,
     )
 
 @sponsor_group.command(
@@ -940,6 +944,7 @@ async def sponsor_info(
             f"{target.mention} is not marked as a sponsor.",
             ephemeral=True,
             allowed_mentions=discord.AllowedMentions(users=False),
+            suppress_embeds=True,
         )
 
     sponsor_type = (
@@ -970,6 +975,7 @@ async def sponsor_list(interaction: discord.Interaction):
         overview,
         ephemeral=True,
         allowed_mentions=discord.AllowedMentions(users=False),
+        suppress_embeds=True,
     )
 
 tree.add_command(sponsor_group)
