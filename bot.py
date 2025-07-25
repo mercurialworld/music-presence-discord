@@ -656,11 +656,11 @@ async def create(interaction: discord.Interaction, name: str):
         await interaction.response.send_modal(
             MacroCreate(macro_name=name, macros_db=bot_utils.macros_db)
         )
+        bot_utils.update_macros_cache()
     else:
         await interaction.response.send_message(
             f"Macro with name `{name}` already exists!", ephemeral=True
         )
-    bot_utils.update_macros_cache()
 
 
 @macros_group.command(
